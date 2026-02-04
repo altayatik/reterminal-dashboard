@@ -1,9 +1,7 @@
-// app.js — SenseCraft-safe + Chicago-locked time + cache-first paint
-// Requires: index.html ids: greeting, dateLine, clock, wxIcon, wxTemp, wxDesc, wxHi, wxLo,
-// week, spy, iau, mktUpdated, updated, mktIcon, weekIcon
-// Requires Netlify functions:
-//   /.netlify/functions/weather?lat=..&lon=..&tz=..
-//   /.netlify/functions/markets
+// app.js — SenseCraft-friendly (static JSON), Chicago-locked time, cache-first paint
+// Expects these DOM ids in index.html:
+// greeting, dateLine, clock, wxIcon, wxTemp, wxDesc, wxHi, wxLo, week,
+// spy, iau, mktUpdated, updated, mktIcon, weekIcon
 
 const CFG = window.DASH_CONFIG ?? {
   name: "Altay",
@@ -13,13 +11,15 @@ const CFG = window.DASH_CONFIG ?? {
   use24h: true
 };
 
-const LS_WEATHER = "dash_weather_v2";
-const LS_MARKETS = "dash_markets_v2";
+const LS_WEATHER = "dash_weather_static_v1";
+const LS_MARKETS = "dash_markets_static_v1";
 
-/* -------------------- Time (forced Chicago) -------------------- */
+const WEATHER_URL = "./data/weather.json";
+const MARKETS_URL = "./data/markets.json";
+
+/* -------------------- Chicago-locked time -------------------- */
 
 function chicagoParts() {
-  // Always compute parts in the configured TZ (Chicago)
   const fmt = new Intl.DateTimeFormat("en-US", {
     timeZone: CFG.timezone,
     weekday: "long",
@@ -35,7 +35,6 @@ function chicagoParts() {
   const m = {};
   for (const p of parts) if (p.type !== "literal") m[p.type] = p.value;
 
-  // Need 24h for greeting
   const hour24 = Number(
     new Intl.DateTimeFormat("en-US", {
       timeZone: CFG.timezone,
@@ -173,6 +172,7 @@ function renderWeek(weekEl, daily) {
 
     const name = document.createElement("div");
     name.className = "dayName";
+    // The daily.time[i] is ISO date string "YYYY-MM-DD"
     name.textContent = new Date(daily.time[i]).toLocaleDateString(undefined, { weekday: "short" });
 
     const ic = document.createElement("div");
@@ -187,6 +187,11 @@ function renderWeek(weekEl, daily) {
     box.append(name, ic, temps);
     weekEl.appendChild(box);
   }
+}
+
+function setStatus(el, label) {
+  const t = chicagoParts();
+  el.updated.textContent = `${label} ${t.hour}:${t.minute}`;
 }
 
 /* -------------------- Cache-first paint -------------------- */
@@ -211,24 +216,19 @@ function tryRenderCached(el) {
     if (m?.symbols) {
       el.spy.textContent = fmtPrice(m.symbols.SPY?.price);
       el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
-      if (m.updated_iso) el.mktUpdated.textContent = `Updated ${m.updated_hm ?? ""}`.trim();
+      if (m.updated_hm) el.mktUpdated.textContent = `Updated ${m.updated_hm}`;
     }
   } catch {}
 }
 
-/* -------------------- Network loaders (SenseCraft-safe) -------------------- */
+/* -------------------- Static JSON loaders -------------------- */
 
-async function loadWeather(el) {
-  // Weather must be proxied through Netlify function for SenseCraft sandbox compatibility
-  const qs = new URLSearchParams({
-    lat: String(CFG.lat),
-    lon: String(CFG.lon),
-    tz: CFG.timezone
-  });
-
-  const r = await fetch(`/.netlify/functions/weather?${qs.toString()}`, { cache: "no-store" });
-  if (!r.ok) throw new Error("weather failed");
+async function loadWeatherFromStatic(el) {
+  const r = await fetch(WEATHER_URL, { cache: "no-store" });
+  if (!r.ok) throw new Error("weather.json missing");
   const d = await r.json();
+
+  if (!d?.current || !d?.daily) throw new Error("weather.json empty");
 
   const code = d.current.weather_code;
   const curTemp = Math.round(d.current.temperature_2m);
@@ -243,30 +243,27 @@ async function loadWeather(el) {
 
   renderWeek(el.week, d.daily);
 
-  // Cache minimal fields for instant next boot
   localStorage.setItem(LS_WEATHER, JSON.stringify({
     current: { code, temp: curTemp, hi, lo, text: wxText(code) },
     daily: d.daily
   }));
 }
 
-async function loadMarkets(el) {
-  // Markets through Netlify function; function should send CORS headers for SenseCraft
-  const r = await fetch("/.netlify/functions/markets", { cache: "no-store" });
-  if (!r.ok) throw new Error("markets failed");
+async function loadMarketsFromStatic(el) {
+  const r = await fetch(MARKETS_URL, { cache: "no-store" });
+  if (!r.ok) throw new Error("markets.json missing");
   const d = await r.json();
 
   el.spy.textContent = fmtPrice(d?.symbols?.SPY?.price);
   el.iau.textContent = fmtPrice(d?.symbols?.IAU?.price);
 
-  // Display updated time in Chicago, not device timezone
   const t = chicagoParts();
-  const updatedHM = `${t.hour}:${t.minute}`;
-  el.mktUpdated.textContent = `Updated ${updatedHM}`;
+  const hm = `${t.hour}:${t.minute}`;
+  el.mktUpdated.textContent = `Updated ${hm}`;
 
   localStorage.setItem(LS_MARKETS, JSON.stringify({
     ...d,
-    updated_hm: updatedHM
+    updated_hm: hm
   }));
 }
 
@@ -296,23 +293,24 @@ document.addEventListener("DOMContentLoaded", () => {
     weekIcon: document.getElementById("weekIcon")
   };
 
-  // Icons
+  // Header icons
   if (el.mktIcon) el.mktIcon.innerHTML = iconChart();
   if (el.weekIcon) el.weekIcon.innerHTML = iconWeek();
 
-  // Instant paint from cache (prevents empty look on e-ink)
+  // Instant paint from cache
   tryRenderCached(el);
 
-  // Time/date locked to Chicago
+  // Chicago time always
   scheduleMinuteClock(el);
 
-  // Background fetch
-  Promise.allSettled([loadWeather(el), loadMarkets(el)]).finally(() => {
-    const t = chicagoParts();
-    el.updated.textContent = `Loaded ${t.hour}:${t.minute}`;
-  });
+  // Static JSON load (fast + SenseCraft safe)
+  Promise.allSettled([
+    loadWeatherFromStatic(el),
+    loadMarketsFromStatic(el)
+  ]).finally(() => setStatus(el, "Loaded"));
 
-  // Periodic refresh (e-ink friendly)
-  setInterval(() => loadWeather(el).catch(() => {}), 30 * 60 * 1000);
-  setInterval(() => loadMarkets(el).catch(() => {}), 30 * 60 * 1000);
+  // Optional: refresh periodically (won't help unless GitHub Actions has updated JSON + Netlify redeployed)
+  // Keep it gentle for e-ink.
+  setInterval(() => loadWeatherFromStatic(el).catch(() => {}), 60 * 60 * 1000);
+  setInterval(() => loadMarketsFromStatic(el).catch(() => {}), 60 * 60 * 1000);
 });
