@@ -1,41 +1,59 @@
-export async function handler(){
+// netlify/functions/markets.js
 
-  const key = process.env.TWELVEDATA_API_KEY;
+export async function handler() {
+  try {
+    const key = process.env.TWELVEDATA_API_KEY;
+    if (!key) {
+      return { statusCode: 500, body: "Missing TWELVEDATA_API_KEY" };
+    }
 
-  if(!key){
-    return { statusCode:500, body:"Missing API key" };
-  }
+    async function quote(symbol) {
+      const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbol)}&apikey=${encodeURIComponent(key)}`;
+      const res = await fetch(url);
+      const data = await res.json();
 
-  async function quote(sym){
-    const r = await fetch(
-      `https://api.twelvedata.com/quote?symbol=${sym}&apikey=${key}`
-    );
-    const j = await r.json();
-    if(j.status==="error") throw new Error(j.message);
-    return j;
-  }
+      if (!res.ok || data?.status === "error") {
+        throw new Error(data?.message || `Quote failed for ${symbol}`);
+      }
+      return data;
+    }
 
-  try{
-    const [spy,iau]=await Promise.all([
-      quote("SPY"),
-      quote("IAU")
-    ]);
+    function num(v) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    const [spy, iau] = await Promise.all([quote("SPY"), quote("IAU")]);
+
+    // TwelveData quote commonly uses "close" (see their example response). :contentReference[oaicite:1]{index=1}
+    const payload = {
+      updated_iso: new Date().toISOString(),
+      symbols: {
+        SPY: {
+          price: num(spy.close ?? spy.price),
+          change: num(spy.change),
+          percent_change: num(spy.percent_change),
+        },
+        IAU: {
+          price: num(iau.close ?? iau.price),
+          change: num(iau.change),
+          percent_change: num(iau.percent_change),
+        }
+      }
+    };
 
     return {
-      statusCode:200,
-      headers:{
-        "content-type":"application/json",
-        "cache-control":"public, max-age=300"
+      statusCode: 200,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "public, max-age=300" // 5 min
       },
-      body:JSON.stringify({
-        updated_iso:new Date().toISOString(),
-        symbols:{
-          SPY:{ price:Number(spy.price)||null },
-          IAU:{ price:Number(iau.price)||null }
-        }
-      })
+      body: JSON.stringify(payload)
     };
-  }catch(e){
-    return { statusCode:500, body:String(e) };
+  } catch (err) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: String(err?.message || err) })
+    };
   }
 }
