@@ -1,4 +1,4 @@
-// app.js — SenseCraft-proof: NO fetch(), reads window.DASH_DATA from Vercel API
+// app.js — restored original icon behavior (no weather icon set)
 
 const CFG = window.DASH_CONFIG ?? {
   name: "Altay",
@@ -57,7 +57,7 @@ function scheduleMinuteClock(el) {
   }, msToNextMinute);
 }
 
-/* -------------------- Icons (restored original) -------------------- */
+/* -------------------- Original icons only -------------------- */
 function iconChart() {
   return `
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -75,7 +75,7 @@ function iconWeek() {
   </svg>`;
 }
 
-/* -------------------- Weather helpers (with emoji icons restored) -------------------- */
+/* -------------------- Weather helpers -------------------- */
 const weatherCodes = {
   0: "Clear sky",
   1: "Mainly clear",
@@ -100,27 +100,6 @@ const weatherCodes = {
 function wxText(code) {
   return weatherCodes[code] || "Unknown";
 }
-
-const wxEmoji = {
-  0: "☀️",       // Clear sky
-  1: "🌤️",      // Mainly clear
-  2: "⛅",       // Partly cloudy
-  3: "☁️",       // Overcast
-  45: "🌫️",     // Fog
-  51: "🌧️",     // Light drizzle
-  53: "🌧️",     // Moderate drizzle
-  55: "🌧️",     // Dense drizzle
-  61: "🌧️",     // Slight rain
-  63: "🌧️",     // Moderate rain
-  65: "🌧️",     // Heavy rain
-  71: "❄️",      // Slight snow
-  73: "❄️",      // Moderate snow
-  75: "❄️",      // Heavy snow
-  80: "🌦️",     // Slight showers
-  81: "🌦️",     // Moderate showers
-  82: "🌦️",     // Violent showers
-  default: "❓"  // Unknown
-};
 
 /* -------------------- Render week forecast -------------------- */
 function renderWeek(el, daily) {
@@ -168,11 +147,7 @@ function tryRenderCached(el) {
       el.wxHi.textContent = `${hi}°`;
       el.wxLo.textContent = `${lo}°`;
 
-      // Restore weather emoji icon
-      if (el.wxIcon) {
-        el.wxIcon.textContent = wxEmoji[code] || "❓";
-      }
-
+      // No icon set — keep #wxIcon empty like original
       // Age warning
       if (updated_iso) {
         const ageHours = (Date.now() - new Date(updated_iso).getTime()) / 3600000;
@@ -210,10 +185,7 @@ function loadFromEmbedded(el) {
     el.wxHi.textContent = `${hi}°`;
     el.wxLo.textContent = `${lo}°`;
 
-    // Restore weather emoji icon
-    if (el.wxIcon) {
-      el.wxIcon.textContent = wxEmoji[code] || "❓";
-    }
+    // No icon set — #wxIcon stays empty like original working version
 
     // Render week forecast
     if (w.daily) {
