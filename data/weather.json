@@ -1,10 +1,10 @@
 {
-  "updated_iso": "2026-02-04T17:41:50.863Z",
+  "updated_iso": "2026-02-04T18:41:50.749Z",
   "current": {
-    "time": "2026-02-04T11:30",
+    "time": "2026-02-04T12:30",
     "interval": 900,
-    "temperature_2m": 24.9,
-    "weather_code": 73
+    "temperature_2m": 25.5,
+    "weather_code": 3
   },
   "daily": {
     "time": [
@@ -36,7 +36,7 @@
     ],
     "temperature_2m_min": [
       16.6,
-      15.7,
+      15.8,
       17.2,
       12,
       18.6,
