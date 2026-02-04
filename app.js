@@ -1,4 +1,4 @@
-// app.js — SenseCraft-proof: NO fetch(), reads window.DASH_DATA populated by Vercel API scripts
+// app.js — SenseCraft-proof: NO fetch(), reads window.DASH_DATA from Vercel API
 
 const CFG = window.DASH_CONFIG ?? {
   name: "Altay",
@@ -57,7 +57,7 @@ function scheduleMinuteClock(el) {
   }, msToNextMinute);
 }
 
-/* -------------------- Icons -------------------- */
+/* -------------------- Icons (restored original) -------------------- */
 function iconChart() {
   return `
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -75,7 +75,7 @@ function iconWeek() {
   </svg>`;
 }
 
-/* -------------------- Weather helpers -------------------- */
+/* -------------------- Weather helpers (with emoji icons restored) -------------------- */
 const weatherCodes = {
   0: "Clear sky",
   1: "Mainly clear",
@@ -101,10 +101,31 @@ function wxText(code) {
   return weatherCodes[code] || "Unknown";
 }
 
+const wxEmoji = {
+  0: "☀️",       // Clear sky
+  1: "🌤️",      // Mainly clear
+  2: "⛅",       // Partly cloudy
+  3: "☁️",       // Overcast
+  45: "🌫️",     // Fog
+  51: "🌧️",     // Light drizzle
+  53: "🌧️",     // Moderate drizzle
+  55: "🌧️",     // Dense drizzle
+  61: "🌧️",     // Slight rain
+  63: "🌧️",     // Moderate rain
+  65: "🌧️",     // Heavy rain
+  71: "❄️",      // Slight snow
+  73: "❄️",      // Moderate snow
+  75: "❄️",      // Heavy snow
+  80: "🌦️",     // Slight showers
+  81: "🌦️",     // Moderate showers
+  82: "🌦️",     // Violent showers
+  default: "❓"  // Unknown
+};
+
 /* -------------------- Render week forecast -------------------- */
 function renderWeek(el, daily) {
   if (!daily?.time?.length) {
-    el.innerHTML = "<div>No forecast data</div>"; // fallback text
+    el.innerHTML = "<div>No forecast</div>";
     return;
   }
 
@@ -147,14 +168,16 @@ function tryRenderCached(el) {
       el.wxHi.textContent = `${hi}°`;
       el.wxLo.textContent = `${lo}°`;
 
-      // Age warning if old
+      // Restore weather emoji icon
+      if (el.wxIcon) {
+        el.wxIcon.textContent = wxEmoji[code] || "❓";
+      }
+
+      // Age warning
       if (updated_iso) {
         const ageHours = (Date.now() - new Date(updated_iso).getTime()) / 3600000;
         if (ageHours > 24) {
-          const ageSpan = document.createElement("span");
-          ageSpan.textContent = " (old)";
-          ageSpan.style.fontSize = "11px";
-          el.wxDesc.appendChild(ageSpan);
+          el.wxDesc.textContent += " (old)";
         }
       }
     }
@@ -183,11 +206,16 @@ function loadFromEmbedded(el) {
     const lo = Math.round(w.daily?.temperature_2m_min?.[0] ?? 0);
 
     el.wxTemp.textContent = `${curTemp}°`;
-    el.wxDesc.textContent = wxText(code); // set once
+    el.wxDesc.textContent = wxText(code);
     el.wxHi.textContent = `${hi}°`;
     el.wxLo.textContent = `${lo}°`;
 
-    // Render week forecast with safety check
+    // Restore weather emoji icon
+    if (el.wxIcon) {
+      el.wxIcon.textContent = wxEmoji[code] || "❓";
+    }
+
+    // Render week forecast
     if (w.daily) {
       renderWeek(el.week, w.daily);
     } else {
@@ -208,7 +236,7 @@ function loadFromEmbedded(el) {
     };
     localStorage.setItem(LS_WEATHER, JSON.stringify(weatherSave));
 
-    // Add weather update time (small text, no duplication)
+    // Add weather update time
     if (w.updated_iso) {
       const updTime = new Date(w.updated_iso).toLocaleTimeString("en-US", {
         hour12: false,
@@ -232,7 +260,7 @@ function loadFromEmbedded(el) {
   }
 
   // ── Markets ───────────────────────────────────────────────────────────
-  if (m?.symbols?.SPY?.price) {  // stricter check
+  if (m?.symbols?.SPY?.price) {
     el.spy.textContent = fmtPrice(m.symbols.SPY?.price);
     el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
 
@@ -251,7 +279,6 @@ function loadFromEmbedded(el) {
       updated_hm: `Updated ${updateDisplay}${status}`
     }));
   } else {
-    // Fallback: no market data
     el.spy.textContent = "—";
     el.iau.textContent = "—";
     el.mktUpdated.textContent = "No market data yet";
@@ -288,20 +315,15 @@ document.addEventListener("DOMContentLoaded", () => {
   if (el.mktIcon) el.mktIcon.innerHTML = iconChart();
   if (el.weekIcon) el.weekIcon.innerHTML = iconWeek();
 
-  // Show cached immediately
   tryRenderCached(el);
-
-  // Live clock
   scheduleMinuteClock(el);
 
-  // Load fresh data
   try {
     loadFromEmbedded(el);
   } catch (err) {
     console.error("Embedded data load failed:", err);
   }
 
-  // Error fallback after delay
   setTimeout(() => {
     if (!window.DASH_DATA?.markets?.symbols?.SPY?.price) {
       el.spy.textContent = "—";
