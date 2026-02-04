@@ -1,2 +1,0 @@
-// AUTO-GENERATED. DO NOT EDIT.
-window.DASH_DATA = window.DASH_DATA || {}; window.DASH_DATA.weather = {"updated_iso":"2026-02-04T05:54:16.032Z","current":{"time":"2026-02-03T23:45","interval":900,"temperature_2m":17,"weather_code":3},"daily":{"time":["2026-02-03","2026-02-04","2026-02-05","2026-02-06","2026-02-07","2026-02-08","2026-02-09"],"weather_code":[3,71,3,71,51,51,3],"temperature_2m_max":[27.8,26.1,26.5,34.5,23.7,30.6,39.9],"temperature_2m_min":[16,16.2,14.4,18.3,13.1,19.6,24.3]}};

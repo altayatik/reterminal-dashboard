@@ -165,3 +165,11 @@ html,body{
 
 .tiny{font-size:11px}
 .muted{color:var(--muted)}
+
+/* Add this at the bottom */
+.card.stale .cardTitle,
+.card.stale .value,
+.card.stale .tiny {
+  color: var(--muted);
+  font-style: italic;
+}
