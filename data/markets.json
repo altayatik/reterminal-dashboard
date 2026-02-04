@@ -1,15 +1,15 @@
 {
-  "updated_iso": "2026-02-04T15:37:56.276Z",
+  "updated_iso": "2026-02-04T16:40:36.051Z",
   "symbols": {
     "SPY": {
-      "price": 688.13,
-      "change": -1.40003,
-      "percent_change": -0.20304109
+      "price": 686.91,
+      "change": -2.62003,
+      "percent_change": -0.3799732
     },
     "IAU": {
-      "price": 92.23,
-      "change": -0.79999878,
-      "percent_change": -0.85993635
+      "price": 92.53,
+      "change": -0.49999878,
+      "percent_change": -0.53745973
     }
   }
 }
