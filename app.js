@@ -1,6 +1,4 @@
-// app.js — SenseCraft-proof: NO fetch(), reads window.DASH_DATA populated by data/*.js or Vercel API scripts
-// Expected DOM ids: greeting, dateLine, clock, wxIcon, wxTemp, wxDesc, wxHi, wxLo,
-// week, spy, iau, mktUpdated, updated, mktIcon, weekIcon
+// app.js — SenseCraft-proof: NO fetch(), reads window.DASH_DATA populated by Vercel API scripts
 
 const CFG = window.DASH_CONFIG ?? {
   name: "Altay",
@@ -77,12 +75,12 @@ function iconWeek() {
   </svg>`;
 }
 
-/* -------------------- Weather helpers (unchanged) -------------------- */
+/* -------------------- Weather helpers -------------------- */
 const weatherCodes = {
   0: "Clear sky",
   1: "Mainly clear",
   2: "Partly cloudy",
-  3: "Overcast",
+  3: "Very cloudy",
   45: "Fog",
   48: "Depositing rime fog",
   51: "Light drizzle",
@@ -96,17 +94,11 @@ const weatherCodes = {
   75: "Heavy snow fall",
   80: "Slight rain showers",
   81: "Moderate rain showers",
-  82: "Violent rain showers",
-  // Add more as needed...
+  82: "Heavy rain",
 };
 
 function wxText(code) {
   return weatherCodes[code] || "Unknown";
-}
-
-function fmtPrice(p) {
-  if (p == null) return "--";
-  return `$${Number(p).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /* -------------------- Render week forecast -------------------- */
@@ -122,7 +114,6 @@ function renderWeek(el, daily) {
     const name = new Date(dateStr).toLocaleDateString("en-US", { weekday: "short" });
     const hi = Math.round(daily.temperature_2m_max[i]);
     const lo = Math.round(daily.temperature_2m_min[i]);
-    const code = daily.weather_code[i];
 
     dayEl.innerHTML = `
       <div class="dayName">${name}</div>
@@ -136,17 +127,30 @@ function renderWeek(el, daily) {
   });
 }
 
-/* -------------------- Main render -------------------- */
+/* -------------------- Price formatter -------------------- */
+function fmtPrice(p) {
+  if (p == null) return "--";
+  return `$${Number(p).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/* -------------------- Show cached data immediately -------------------- */
 function tryRenderCached(el) {
   try {
     const cachedWeather = JSON.parse(localStorage.getItem(LS_WEATHER));
     if (cachedWeather?.current) {
-      const { code, temp, hi, lo, text } = cachedWeather.current;
+      const { code, temp, hi, lo, text, updated_iso } = cachedWeather.current;
       el.wxTemp.textContent = `${temp}°`;
       el.wxDesc.textContent = text;
       el.wxHi.textContent = `${hi}°`;
       el.wxLo.textContent = `${lo}°`;
-      // Could render week from cached too, but skipped for simplicity
+
+      // Show age warning if old
+      if (updated_iso) {
+        const ageHours = (Date.now() - new Date(updated_iso).getTime()) / 3600000;
+        if (ageHours > 24) {
+          el.wxDesc.textContent += " (old)";
+        }
+      }
     }
   } catch {}
 
@@ -160,10 +164,12 @@ function tryRenderCached(el) {
   } catch {}
 }
 
+/* -------------------- Load from embedded scripts (Vercel API) -------------------- */
 function loadFromEmbedded(el) {
   const w = window.DASH_DATA?.weather;
   const m = window.DASH_DATA?.markets;
 
+  // ── Weather ───────────────────────────────────────────────────────────
   if (w?.current) {
     const curTemp = Math.round(w.current.temperature_2m);
     const code = w.current.weather_code;
@@ -176,32 +182,67 @@ function loadFromEmbedded(el) {
     el.wxLo.textContent = `${lo}°`;
     renderWeek(el.week, w.daily);
 
-    localStorage.setItem(LS_WEATHER, JSON.stringify({
-      current: { code, temp: curTemp, hi, lo, text: wxText(code) },
+    // More aggressive localStorage: save timestamp too
+    const weatherSave = {
+      current: {
+        code,
+        temp: curTemp,
+        hi,
+        lo,
+        text: wxText(code),
+        updated_iso: w.updated_iso || new Date().toISOString()
+      },
       daily: w.daily
-    }));
+    };
+    localStorage.setItem(LS_WEATHER, JSON.stringify(weatherSave));
+
+    // Show weather update time (small text)
+    if (w.updated_iso && el.wxDesc) {
+      const updTime = new Date(w.updated_iso).toLocaleTimeString("en-US", {
+        hour12: false,
+        timeZone: "America/Chicago"
+      }).slice(0,5);
+      const updSpan = document.createElement("span");
+      updSpan.textContent = ` · ${updTime}`;
+      updSpan.style.fontSize = "11px";
+      updSpan.style.color = "#555";
+      el.wxDesc.appendChild(updSpan);
+
+      // Age warning if >24h
+      const ageHours = (Date.now() - new Date(w.updated_iso).getTime()) / 3600000;
+      if (ageHours > 24) {
+        el.wxDesc.textContent += " (old)";
+      }
+    }
   }
 
+  // ── Markets ───────────────────────────────────────────────────────────
   if (m?.symbols) {
     el.spy.textContent = fmtPrice(m.symbols.SPY?.price);
     el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
 
-    // Use real last-fetch time + stale indicator
-    let updateDisplay = m.updated_local || (m.updated_iso ? new Date(m.updated_iso).toLocaleTimeString("en-US", {hour12: false, timeZone: "America/Chicago"}).slice(0,5) : "--:--");
+    let updateDisplay = m.updated_local || 
+      (m.updated_iso ? new Date(m.updated_iso).toLocaleTimeString("en-US", {
+        hour12: false,
+        timeZone: "America/Chicago"
+      }).slice(0,5) : "--:--");
 
-    if (!m.in_hours && m.updated_local) {
-      updateDisplay += " (market closed)";
-      // Visual cue: dim the card
-      const marketsCard = document.querySelector('.card:has(#spy)');
-      if (marketsCard) marketsCard.classList.add('stale');
+    let status = "";
+    if (m.in_hours !== undefined) {
+      status = m.in_hours ? " · Market open" : " · Market closed";
     }
 
-    el.mktUpdated.textContent = `Updated ${updateDisplay}`;
+    el.mktUpdated.textContent = `Updated ${updateDisplay}${status}`;
 
     localStorage.setItem(LS_MARKETS, JSON.stringify({
       ...m,
-      updated_hm: updateDisplay
+      updated_hm: `Updated ${updateDisplay}${status}`
     }));
+  } else {
+    // Fallback when no market data at all
+    el.spy.textContent = "—";
+    el.iau.textContent = "—";
+    el.mktUpdated.textContent = "No market data yet";
   }
 
   const t = chicagoParts();
@@ -235,16 +276,31 @@ document.addEventListener("DOMContentLoaded", () => {
   if (el.mktIcon) el.mktIcon.innerHTML = iconChart();
   if (el.weekIcon) el.weekIcon.innerHTML = iconWeek();
 
-  // Show cached immediately (SenseCraft / slow load safety)
+  // Show cached data right away (important for slow e-ink boot)
   tryRenderCached(el);
 
-  // Live Chicago clock
+  // Live clock
   scheduleMinuteClock(el);
 
-  // Load from embedded scripts (Vercel API or static)
-  try { loadFromEmbedded(el); } catch (err) {
+  // Load fresh data from scripts
+  try {
+    loadFromEmbedded(el);
+  } catch (err) {
     console.error("Failed to load embedded data:", err);
   }
+
+  // Error fallback: if scripts failed to load data after 8 seconds
+  setTimeout(() => {
+    if (!window.DASH_DATA?.markets?.symbols?.SPY?.price) {
+      el.spy.textContent = "—";
+      el.iau.textContent = "—";
+      el.mktUpdated.textContent = "API unreachable";
+    }
+    if (!window.DASH_DATA?.weather?.current) {
+      el.wxTemp.textContent = "—";
+      el.wxDesc.textContent = "Weather unavailable";
+    }
+  }, 8000);
 
   const t = chicagoParts();
   el.updated.textContent = `Loaded ${t.hour}:${t.minute}`;
