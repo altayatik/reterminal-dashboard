@@ -76,10 +76,12 @@
 
 </main>
 
-<script src="./data/weather.js"></script>
-<script src="./data/markets.js"></script>
-<script src="./app.js" defer></script>
+<!-- Load data from Vercel API endpoints (these are dynamic JS) -->
+<script src="https://dashboard-data-api.vercel.app/api/weather"></script>
+<script src="https://dashboard-data-api.vercel.app/api/markets"></script>
+
+<!-- Your config and main logic -->
 <script src="config.js"></script>
-<script src="app.js"></script>
+<script src="app.js" defer></script>
 </body>
 </html>
