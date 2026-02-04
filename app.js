@@ -57,7 +57,7 @@ function scheduleMinuteClock(el) {
   }, msToNextMinute);
 }
 
-/* -------------------- Icons (unchanged) -------------------- */
+/* -------------------- Icons -------------------- */
 function iconChart() {
   return `
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -80,7 +80,7 @@ const weatherCodes = {
   0: "Clear sky",
   1: "Mainly clear",
   2: "Partly cloudy",
-  3: "Very cloudy",
+  3: "Overcast",
   45: "Fog",
   48: "Depositing rime fog",
   51: "Light drizzle",
@@ -94,7 +94,7 @@ const weatherCodes = {
   75: "Heavy snow fall",
   80: "Slight rain showers",
   81: "Moderate rain showers",
-  82: "Heavy rain",
+  82: "Violent rain showers",
 };
 
 function wxText(code) {
@@ -103,7 +103,10 @@ function wxText(code) {
 
 /* -------------------- Render week forecast -------------------- */
 function renderWeek(el, daily) {
-  if (!daily?.time?.length) return;
+  if (!daily?.time?.length) {
+    el.innerHTML = "<div>No forecast data</div>"; // fallback text
+    return;
+  }
 
   el.innerHTML = "";
 
@@ -144,11 +147,14 @@ function tryRenderCached(el) {
       el.wxHi.textContent = `${hi}°`;
       el.wxLo.textContent = `${lo}°`;
 
-      // Show age warning if old
+      // Age warning if old
       if (updated_iso) {
         const ageHours = (Date.now() - new Date(updated_iso).getTime()) / 3600000;
         if (ageHours > 24) {
-          el.wxDesc.textContent += " (old)";
+          const ageSpan = document.createElement("span");
+          ageSpan.textContent = " (old)";
+          ageSpan.style.fontSize = "11px";
+          el.wxDesc.appendChild(ageSpan);
         }
       }
     }
@@ -164,7 +170,7 @@ function tryRenderCached(el) {
   } catch {}
 }
 
-/* -------------------- Load from embedded scripts (Vercel API) -------------------- */
+/* -------------------- Load from embedded scripts -------------------- */
 function loadFromEmbedded(el) {
   const w = window.DASH_DATA?.weather;
   const m = window.DASH_DATA?.markets;
@@ -173,16 +179,22 @@ function loadFromEmbedded(el) {
   if (w?.current) {
     const curTemp = Math.round(w.current.temperature_2m);
     const code = w.current.weather_code;
-    const hi = Math.round(w.daily.temperature_2m_max[0]);
-    const lo = Math.round(w.daily.temperature_2m_min[0]);
+    const hi = Math.round(w.daily?.temperature_2m_max?.[0] ?? 0);
+    const lo = Math.round(w.daily?.temperature_2m_min?.[0] ?? 0);
 
     el.wxTemp.textContent = `${curTemp}°`;
-    el.wxDesc.textContent = wxText(code);
+    el.wxDesc.textContent = wxText(code); // set once
     el.wxHi.textContent = `${hi}°`;
     el.wxLo.textContent = `${lo}°`;
-    renderWeek(el.week, w.daily);
 
-    // More aggressive localStorage: save timestamp too
+    // Render week forecast with safety check
+    if (w.daily) {
+      renderWeek(el.week, w.daily);
+    } else {
+      el.week.innerHTML = "<div>No forecast</div>";
+    }
+
+    // Save to localStorage with timestamp
     const weatherSave = {
       current: {
         code,
@@ -196,8 +208,8 @@ function loadFromEmbedded(el) {
     };
     localStorage.setItem(LS_WEATHER, JSON.stringify(weatherSave));
 
-    // Show weather update time (small text)
-    if (w.updated_iso && el.wxDesc) {
+    // Add weather update time (small text, no duplication)
+    if (w.updated_iso) {
       const updTime = new Date(w.updated_iso).toLocaleTimeString("en-US", {
         hour12: false,
         timeZone: "America/Chicago"
@@ -208,29 +220,29 @@ function loadFromEmbedded(el) {
       updSpan.style.color = "#555";
       el.wxDesc.appendChild(updSpan);
 
-      // Age warning if >24h
+      // Age warning
       const ageHours = (Date.now() - new Date(w.updated_iso).getTime()) / 3600000;
       if (ageHours > 24) {
-        el.wxDesc.textContent += " (old)";
+        const ageSpan = document.createElement("span");
+        ageSpan.textContent = " (old)";
+        ageSpan.style.fontSize = "11px";
+        el.wxDesc.appendChild(ageSpan);
       }
     }
   }
 
   // ── Markets ───────────────────────────────────────────────────────────
-  if (m?.symbols) {
+  if (m?.symbols?.SPY?.price) {  // stricter check
     el.spy.textContent = fmtPrice(m.symbols.SPY?.price);
     el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
 
-    let updateDisplay = m.updated_local || 
+    let updateDisplay = m.updated_local ||
       (m.updated_iso ? new Date(m.updated_iso).toLocaleTimeString("en-US", {
         hour12: false,
         timeZone: "America/Chicago"
       }).slice(0,5) : "--:--");
 
-    let status = "";
-    if (m.in_hours !== undefined) {
-      status = m.in_hours ? " · Market open" : " · Market closed";
-    }
+    let status = m.in_hours !== undefined ? (m.in_hours ? " · Market open" : " · Market closed") : "";
 
     el.mktUpdated.textContent = `Updated ${updateDisplay}${status}`;
 
@@ -239,7 +251,7 @@ function loadFromEmbedded(el) {
       updated_hm: `Updated ${updateDisplay}${status}`
     }));
   } else {
-    // Fallback when no market data at all
+    // Fallback: no market data
     el.spy.textContent = "—";
     el.iau.textContent = "—";
     el.mktUpdated.textContent = "No market data yet";
@@ -276,20 +288,20 @@ document.addEventListener("DOMContentLoaded", () => {
   if (el.mktIcon) el.mktIcon.innerHTML = iconChart();
   if (el.weekIcon) el.weekIcon.innerHTML = iconWeek();
 
-  // Show cached data right away (important for slow e-ink boot)
+  // Show cached immediately
   tryRenderCached(el);
 
   // Live clock
   scheduleMinuteClock(el);
 
-  // Load fresh data from scripts
+  // Load fresh data
   try {
     loadFromEmbedded(el);
   } catch (err) {
-    console.error("Failed to load embedded data:", err);
+    console.error("Embedded data load failed:", err);
   }
 
-  // Error fallback: if scripts failed to load data after 8 seconds
+  // Error fallback after delay
   setTimeout(() => {
     if (!window.DASH_DATA?.markets?.symbols?.SPY?.price) {
       el.spy.textContent = "—";
@@ -299,6 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!window.DASH_DATA?.weather?.current) {
       el.wxTemp.textContent = "—";
       el.wxDesc.textContent = "Weather unavailable";
+      el.week.innerHTML = "<div>No forecast</div>";
     }
   }, 8000);
 
