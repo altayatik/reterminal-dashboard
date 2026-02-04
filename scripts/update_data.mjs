@@ -45,8 +45,8 @@ async function weather() {
 await fs.mkdir("data", { recursive: true });
 
 const [spy, iau, w] = await Promise.all([
-  quote("SPY:US"),
-  quote("IAU:US"),
+  quote("SPY"),
+  quote("IAU"),
   weather()
 ]);
 
