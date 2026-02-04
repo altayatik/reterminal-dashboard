@@ -1,24 +1,17 @@
-// app.js — SenseCraft-friendly (static JSON), Chicago-locked time, cache-first paint
-// Expects these DOM ids in index.html:
-// greeting, dateLine, clock, wxIcon, wxTemp, wxDesc, wxHi, wxLo, week,
-// spy, iau, mktUpdated, updated, mktIcon, weekIcon
+// app.js — SenseCraft-proof: NO fetch(), reads window.DASH_DATA populated by data/*.js
+// Expected DOM ids: greeting, dateLine, clock, wxIcon, wxTemp, wxDesc, wxHi, wxLo,
+// week, spy, iau, mktUpdated, updated, mktIcon, weekIcon
 
 const CFG = window.DASH_CONFIG ?? {
   name: "Altay",
-  lat: 41.8781,
-  lon: -87.6298,
   timezone: "America/Chicago",
   use24h: true
 };
 
-const LS_WEATHER = "dash_weather_static_v1";
-const LS_MARKETS = "dash_markets_static_v1";
+const LS_WEATHER = "dash_weather_embedded_v1";
+const LS_MARKETS = "dash_markets_embedded_v1";
 
-const WEATHER_URL = "./data/weather.json";
-const MARKETS_URL = "./data/markets.json";
-
-/* -------------------- Chicago-locked time -------------------- */
-
+/* -------------------- Chicago time -------------------- */
 function chicagoParts() {
   const fmt = new Intl.DateTimeFormat("en-US", {
     timeZone: CFG.timezone,
@@ -36,22 +29,11 @@ function chicagoParts() {
   for (const p of parts) if (p.type !== "literal") m[p.type] = p.value;
 
   const hour24 = Number(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: CFG.timezone,
-      hour: "2-digit",
-      hour12: false
-    }).format(new Date())
+    new Intl.DateTimeFormat("en-US", { timeZone: CFG.timezone, hour: "2-digit", hour12: false })
+      .format(new Date())
   );
 
-  return {
-    weekday: m.weekday,
-    year: m.year,
-    month: m.month,
-    day: m.day,
-    hour: m.hour,
-    minute: m.minute,
-    hour24
-  };
+  return { weekday: m.weekday, year: m.year, month: m.month, day: m.day, hour: m.hour, minute: m.minute, hour24 };
 }
 
 function greetingForHour24(h) {
@@ -77,8 +59,7 @@ function scheduleMinuteClock(el) {
   }, msToNextMinute);
 }
 
-/* -------------------- Icons (no emojis) -------------------- */
-
+/* -------------------- Icons -------------------- */
 function iconChart() {
   return `
   <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
@@ -159,7 +140,6 @@ function wxIcon(code) {
 }
 
 /* -------------------- Rendering helpers -------------------- */
-
 function fmtPrice(v) {
   return (typeof v === "number" && Number.isFinite(v)) ? `$${v.toFixed(2)}` : "--";
 }
@@ -172,7 +152,6 @@ function renderWeek(weekEl, daily) {
 
     const name = document.createElement("div");
     name.className = "dayName";
-    // The daily.time[i] is ISO date string "YYYY-MM-DD"
     name.textContent = new Date(daily.time[i]).toLocaleDateString(undefined, { weekday: "short" });
 
     const ic = document.createElement("div");
@@ -189,15 +168,8 @@ function renderWeek(weekEl, daily) {
   }
 }
 
-function setStatus(el, label) {
-  const t = chicagoParts();
-  el.updated.textContent = `${label} ${t.hour}:${t.minute}`;
-}
-
-/* -------------------- Cache-first paint -------------------- */
-
+/* -------------------- Cache fallback -------------------- */
 function tryRenderCached(el) {
-  // Weather cache
   try {
     const w = JSON.parse(localStorage.getItem(LS_WEATHER) || "null");
     if (w?.current && w?.daily) {
@@ -210,7 +182,6 @@ function tryRenderCached(el) {
     }
   } catch {}
 
-  // Markets cache
   try {
     const m = JSON.parse(localStorage.getItem(LS_MARKETS) || "null");
     if (m?.symbols) {
@@ -221,54 +192,46 @@ function tryRenderCached(el) {
   } catch {}
 }
 
-/* -------------------- Static JSON loaders -------------------- */
+/* -------------------- Embedded data loaders (NO fetch) -------------------- */
+function loadFromEmbedded(el) {
+  const w = window.DASH_DATA?.weather;
+  const m = window.DASH_DATA?.markets;
 
-async function loadWeatherFromStatic(el) {
-  const r = await fetch(WEATHER_URL, { cache: "no-store" });
-  if (!r.ok) throw new Error("weather.json missing");
-  const d = await r.json();
+  if (w?.current && w?.daily) {
+    const code = w.current.weather_code;
+    const curTemp = Math.round(w.current.temperature_2m);
+    const hi = Math.round(w.daily.temperature_2m_max[0]);
+    const lo = Math.round(w.daily.temperature_2m_min[0]);
 
-  if (!d?.current || !d?.daily) throw new Error("weather.json empty");
+    el.wxIcon.innerHTML = wxIcon(code);
+    el.wxTemp.textContent = `${curTemp}°`;
+    el.wxDesc.textContent = wxText(code);
+    el.wxHi.textContent = `${hi}°`;
+    el.wxLo.textContent = `${lo}°`;
+    renderWeek(el.week, w.daily);
 
-  const code = d.current.weather_code;
-  const curTemp = Math.round(d.current.temperature_2m);
-  const hi = Math.round(d.daily.temperature_2m_max[0]);
-  const lo = Math.round(d.daily.temperature_2m_min[0]);
+    localStorage.setItem(LS_WEATHER, JSON.stringify({
+      current: { code, temp: curTemp, hi, lo, text: wxText(code) },
+      daily: w.daily
+    }));
+  }
 
-  el.wxIcon.innerHTML = wxIcon(code);
-  el.wxTemp.textContent = `${curTemp}°`;
-  el.wxDesc.textContent = wxText(code);
-  el.wxHi.textContent = `${hi}°`;
-  el.wxLo.textContent = `${lo}°`;
+  if (m?.symbols) {
+    el.spy.textContent = fmtPrice(m.symbols.SPY?.price);
+    el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
 
-  renderWeek(el.week, d.daily);
+    const t = chicagoParts();
+    const hm = `${t.hour}:${t.minute}`;
+    el.mktUpdated.textContent = `Updated ${hm}`;
 
-  localStorage.setItem(LS_WEATHER, JSON.stringify({
-    current: { code, temp: curTemp, hi, lo, text: wxText(code) },
-    daily: d.daily
-  }));
-}
-
-async function loadMarketsFromStatic(el) {
-  const r = await fetch(MARKETS_URL, { cache: "no-store" });
-  if (!r.ok) throw new Error("markets.json missing");
-  const d = await r.json();
-
-  el.spy.textContent = fmtPrice(d?.symbols?.SPY?.price);
-  el.iau.textContent = fmtPrice(d?.symbols?.IAU?.price);
-
-  const t = chicagoParts();
-  const hm = `${t.hour}:${t.minute}`;
-  el.mktUpdated.textContent = `Updated ${hm}`;
-
-  localStorage.setItem(LS_MARKETS, JSON.stringify({
-    ...d,
-    updated_hm: hm
-  }));
+    localStorage.setItem(LS_MARKETS, JSON.stringify({
+      ...m,
+      updated_hm: hm
+    }));
+  }
 }
 
 /* -------------------- Boot -------------------- */
-
 document.addEventListener("DOMContentLoaded", () => {
   const el = {
     greeting: document.getElementById("greeting"),
@@ -280,7 +243,6 @@ document.addEventListener("DOMContentLoaded", () => {
     wxDesc: document.getElementById("wxDesc"),
     wxHi: document.getElementById("wxHi"),
     wxLo: document.getElementById("wxLo"),
-
     week: document.getElementById("week"),
 
     spy: document.getElementById("spy"),
@@ -293,24 +255,18 @@ document.addEventListener("DOMContentLoaded", () => {
     weekIcon: document.getElementById("weekIcon")
   };
 
-  // Header icons
   if (el.mktIcon) el.mktIcon.innerHTML = iconChart();
   if (el.weekIcon) el.weekIcon.innerHTML = iconWeek();
 
-  // Instant paint from cache
+  // If SenseCraft delays scripts, show cached immediately so it never looks empty
   tryRenderCached(el);
 
-  // Chicago time always
+  // Always Chicago time
   scheduleMinuteClock(el);
 
-  // Static JSON load (fast + SenseCraft safe)
-  Promise.allSettled([
-    loadWeatherFromStatic(el),
-    loadMarketsFromStatic(el)
-  ]).finally(() => setStatus(el, "Loaded"));
+  // Load data from embedded JS (SenseCraft-safe)
+  try { loadFromEmbedded(el); } catch {}
 
-  // Optional: refresh periodically (won't help unless GitHub Actions has updated JSON + Netlify redeployed)
-  // Keep it gentle for e-ink.
-  setInterval(() => loadWeatherFromStatic(el).catch(() => {}), 60 * 60 * 1000);
-  setInterval(() => loadMarketsFromStatic(el).catch(() => {}), 60 * 60 * 1000);
+  const t = chicagoParts();
+  el.updated.textContent = `Loaded ${t.hour}:${t.minute}`;
 });
