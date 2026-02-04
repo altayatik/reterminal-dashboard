@@ -1,4 +1,9 @@
-// app.js
+// app.js — SenseCraft-safe + Chicago-locked time + cache-first paint
+// Requires: index.html ids: greeting, dateLine, clock, wxIcon, wxTemp, wxDesc, wxHi, wxLo,
+// week, spy, iau, mktUpdated, updated, mktIcon, weekIcon
+// Requires Netlify functions:
+//   /.netlify/functions/weather?lat=..&lon=..&tz=..
+//   /.netlify/functions/markets
 
 const CFG = window.DASH_CONFIG ?? {
   name: "Altay",
@@ -8,112 +13,173 @@ const CFG = window.DASH_CONFIG ?? {
   use24h: true
 };
 
-const LS_WEATHER = "dash_weather_v1";
-const LS_MARKETS = "dash_markets_v1";
+const LS_WEATHER = "dash_weather_v2";
+const LS_MARKETS = "dash_markets_v2";
 
-function pad(n){ return String(n).padStart(2,"0"); }
+/* -------------------- Time (forced Chicago) -------------------- */
 
-function formatTime(d){
-  const h = d.getHours(), m = d.getMinutes();
-  if (CFG.use24h) return `${pad(h)}:${pad(m)}`;
-  const hh = ((h + 11) % 12) + 1;
-  const ampm = h >= 12 ? "PM" : "AM";
-  return `${hh}:${pad(m)} ${ampm}`;
+function chicagoParts() {
+  // Always compute parts in the configured TZ (Chicago)
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: CFG.timezone,
+    weekday: "long",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: !CFG.use24h
+  });
+
+  const parts = fmt.formatToParts(new Date());
+  const m = {};
+  for (const p of parts) if (p.type !== "literal") m[p.type] = p.value;
+
+  // Need 24h for greeting
+  const hour24 = Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: CFG.timezone,
+      hour: "2-digit",
+      hour12: false
+    }).format(new Date())
+  );
+
+  return {
+    weekday: m.weekday,
+    year: m.year,
+    month: m.month,
+    day: m.day,
+    hour: m.hour,
+    minute: m.minute,
+    hour24
+  };
 }
 
-function greetingForHour(h){
-  if(h>=5 && h<12) return "Good morning";
-  if(h>=12 && h<17) return "Good afternoon";
-  if(h>=17 && h<21) return "Good evening";
+function greetingForHour24(h) {
+  if (h >= 5 && h < 12) return "Good morning";
+  if (h >= 12 && h < 17) return "Good afternoon";
+  if (h >= 17 && h < 21) return "Good evening";
   return "Good night";
 }
 
-function dateLine(d){
-  const mm=pad(d.getMonth()+1), dd=pad(d.getDate()), yyyy=d.getFullYear();
-  const day=d.toLocaleDateString(undefined,{weekday:"long"});
-  return `${mm}/${dd}/${yyyy} · ${day} · ${formatTime(d)}`;
+function updateTop(el) {
+  const t = chicagoParts();
+  el.greeting.textContent = `${greetingForHour24(t.hour24)}, ${CFG.name}!`;
+  el.clock.textContent = `${t.hour}:${t.minute}`;
+  el.dateLine.textContent = `${t.month}/${t.day}/${t.year} · ${t.weekday} · ${t.hour}:${t.minute}`;
 }
 
-/* --- Icons (no emojis) --- */
-function iconChart(){
-  return `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
-    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M4 19V5"></path><path d="M4 19h16"></path><path d="M7 15l3-4 3 3 5-7"></path>
+function scheduleMinuteClock(el) {
+  updateTop(el);
+  const msToNextMinute = (60 - new Date().getSeconds()) * 1000 + 50;
+  setTimeout(() => {
+    updateTop(el);
+    setInterval(() => updateTop(el), 60 * 1000);
+  }, msToNextMinute);
+}
+
+/* -------------------- Icons (no emojis) -------------------- */
+
+function iconChart() {
+  return `
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M4 19V5"></path>
+    <path d="M4 19h16"></path>
+    <path d="M7 15l3-4 3 3 5-7"></path>
   </svg>`;
 }
-function iconWeek(){
-  return `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
-    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+
+function iconWeek() {
+  return `
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <rect x="3" y="4" width="18" height="17" rx="2"></rect>
     <path d="M8 2v4M16 2v4M3 9h18"></path>
   </svg>`;
 }
 
-function wxText(code){
-  const m={
-    0:"Clear",1:"Mostly clear",2:"Partly cloudy",3:"Overcast",
-    45:"Fog",48:"Fog",
-    51:"Drizzle",53:"Drizzle",55:"Heavy drizzle",
-    61:"Rain",63:"Rain",65:"Heavy rain",
-    71:"Snow",73:"Snow",75:"Heavy snow",
-    80:"Showers",81:"Showers",82:"Showers",
-    95:"Thunderstorm",96:"Thunderstorm",99:"Thunderstorm"
+function wxText(code) {
+  const m = {
+    0: "Clear", 1: "Mostly clear", 2: "Partly cloudy", 3: "Overcast",
+    45: "Fog", 48: "Fog",
+    51: "Drizzle", 53: "Drizzle", 55: "Heavy drizzle",
+    61: "Rain", 63: "Rain", 65: "Heavy rain",
+    71: "Snow", 73: "Snow", 75: "Heavy snow",
+    80: "Showers", 81: "Showers", 82: "Showers",
+    95: "Thunderstorm", 96: "Thunderstorm", 99: "Thunderstorm"
   };
-  return m[code]||"—";
+  return m[code] ?? "—";
 }
 
-function wxIcon(code){
+function wxIcon(code) {
   const c = `fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"`;
   const kind =
-    (code===0||code===1)?"sun":
-    (code===2||code===3)?"cloud":
-    (code===45||code===48)?"fog":
-    (code>=51&&code<=67)?"rain":
-    (code>=71&&code<=77)?"snow":
-    (code>=80&&code<=82)?"rain":
-    (code>=95)?"storm":"cloud";
+    (code === 0 || code === 1) ? "sun" :
+    (code === 2 || code === 3) ? "cloud" :
+    (code === 45 || code === 48) ? "fog" :
+    (code >= 51 && code <= 67) ? "rain" :
+    (code >= 71 && code <= 77) ? "snow" :
+    (code >= 80 && code <= 82) ? "rain" :
+    (code >= 95) ? "storm" : "cloud";
 
-  if(kind==="sun")return `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+  if (kind === "sun") return `
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
     <circle cx="12" cy="12" r="4" ${c}></circle>
     <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" ${c}></path>
   </svg>`;
-  if(kind==="fog")return `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+
+  if (kind === "fog") return `
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
     <path d="M4 10h16M6 14h12M4 18h16" ${c}></path>
     <path d="M7 10a5 5 0 0 1 10 0" ${c}></path>
   </svg>`;
-  if(kind==="rain")return `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+
+  if (kind === "rain") return `
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
     <path d="M7 18a4 4 0 0 1 0-8 6 6 0 0 1 11.6 1.6A3.5 3.5 0 1 1 18 18H7" ${c}></path>
     <path d="M8 20l1-2M12 20l1-2M16 20l1-2" ${c}></path>
   </svg>`;
-  if(kind==="snow")return `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+
+  if (kind === "snow") return `
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
     <path d="M7 17a4 4 0 0 1 0-8 6 6 0 0 1 11.6 1.6A3.5 3.5 0 1 1 18 17H7" ${c}></path>
     <path d="M9 20h.01M12 20h.01M15 20h.01" ${c}></path>
   </svg>`;
-  if(kind==="storm")return `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+
+  if (kind === "storm") return `
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
     <path d="M7 18a4 4 0 0 1 0-8 6 6 0 0 1 11.6 1.6A3.5 3.5 0 1 1 18 18H7" ${c}></path>
     <path d="M13 13l-2 4h3l-2 4" ${c}></path>
   </svg>`;
-  return `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+
+  return `
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
     <path d="M7 18a4 4 0 0 1 0-8 6 6 0 0 1 11.6 1.6A3.5 3.5 0 1 1 18 18H7" ${c}></path>
   </svg>`;
 }
 
-/* --- Render helpers --- */
-function renderWeek(weekEl, daily){
+/* -------------------- Rendering helpers -------------------- */
+
+function fmtPrice(v) {
+  return (typeof v === "number" && Number.isFinite(v)) ? `$${v.toFixed(2)}` : "--";
+}
+
+function renderWeek(weekEl, daily) {
   weekEl.innerHTML = "";
-  for(let i=0;i<7;i++){
-    const box=document.createElement("div");
-    box.className="day";
+  for (let i = 0; i < 7; i++) {
+    const box = document.createElement("div");
+    box.className = "day";
 
-    const name=document.createElement("div");
-    name.className="dayName";
-    name.textContent = new Date(daily.time[i]).toLocaleDateString(undefined,{weekday:"short"});
+    const name = document.createElement("div");
+    name.className = "dayName";
+    name.textContent = new Date(daily.time[i]).toLocaleDateString(undefined, { weekday: "short" });
 
-    const ic=document.createElement("div");
+    const ic = document.createElement("div");
     ic.innerHTML = wxIcon(daily.weather_code[i]);
 
-    const temps=document.createElement("div");
-    temps.className="dayTemps";
+    const temps = document.createElement("div");
+    temps.className = "dayTemps";
     temps.innerHTML =
       `<span>${Math.round(daily.temperature_2m_max[i])}°</span>
        <span class="lo">${Math.round(daily.temperature_2m_min[i])}°</span>`;
@@ -123,16 +189,13 @@ function renderWeek(weekEl, daily){
   }
 }
 
-function fmtPrice(v){
-  return (typeof v === "number" && Number.isFinite(v)) ? `$${v.toFixed(2)}` : "--";
-}
+/* -------------------- Cache-first paint -------------------- */
 
-/* --- Cache-first paint --- */
-function tryRenderCached(el){
+function tryRenderCached(el) {
   // Weather cache
-  try{
+  try {
     const w = JSON.parse(localStorage.getItem(LS_WEATHER) || "null");
-    if (w?.current && w?.daily){
+    if (w?.current && w?.daily) {
       el.wxIcon.innerHTML = wxIcon(w.current.code);
       el.wxTemp.textContent = `${w.current.temp}°`;
       el.wxDesc.textContent = w.current.text;
@@ -140,31 +203,30 @@ function tryRenderCached(el){
       el.wxLo.textContent = `${w.current.lo}°`;
       renderWeek(el.week, w.daily);
     }
-  }catch{}
+  } catch {}
 
   // Markets cache
-  try{
+  try {
     const m = JSON.parse(localStorage.getItem(LS_MARKETS) || "null");
-    if (m?.symbols){
+    if (m?.symbols) {
       el.spy.textContent = fmtPrice(m.symbols.SPY?.price);
       el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
-      if (m.updated_iso) el.mktUpdated.textContent = `Updated ${formatTime(new Date(m.updated_iso))}`;
+      if (m.updated_iso) el.mktUpdated.textContent = `Updated ${m.updated_hm ?? ""}`.trim();
     }
-  }catch{}
+  } catch {}
 }
 
-/* --- Network loaders --- */
-async function loadWeather(el){
-  const params = new URLSearchParams({
-    latitude: String(CFG.lat),
-    longitude: String(CFG.lon),
-    timezone: CFG.timezone,
-    current: "temperature_2m,weather_code",
-    daily: "weather_code,temperature_2m_max,temperature_2m_min",
-    temperature_unit: "fahrenheit"
+/* -------------------- Network loaders (SenseCraft-safe) -------------------- */
+
+async function loadWeather(el) {
+  // Weather must be proxied through Netlify function for SenseCraft sandbox compatibility
+  const qs = new URLSearchParams({
+    lat: String(CFG.lat),
+    lon: String(CFG.lon),
+    tz: CFG.timezone
   });
 
-  const r = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
+  const r = await fetch(`/.netlify/functions/weather?${qs.toString()}`, { cache: "no-store" });
   if (!r.ok) throw new Error("weather failed");
   const d = await r.json();
 
@@ -181,14 +243,15 @@ async function loadWeather(el){
 
   renderWeek(el.week, d.daily);
 
-  // store cache (small + fast)
+  // Cache minimal fields for instant next boot
   localStorage.setItem(LS_WEATHER, JSON.stringify({
     current: { code, temp: curTemp, hi, lo, text: wxText(code) },
     daily: d.daily
   }));
 }
 
-async function loadMarkets(el){
+async function loadMarkets(el) {
+  // Markets through Netlify function; function should send CORS headers for SenseCraft
   const r = await fetch("/.netlify/functions/markets", { cache: "no-store" });
   if (!r.ok) throw new Error("markets failed");
   const d = await r.json();
@@ -196,67 +259,60 @@ async function loadMarkets(el){
   el.spy.textContent = fmtPrice(d?.symbols?.SPY?.price);
   el.iau.textContent = fmtPrice(d?.symbols?.IAU?.price);
 
-  if (d?.updated_iso) el.mktUpdated.textContent = `Updated ${formatTime(new Date(d.updated_iso))}`;
+  // Display updated time in Chicago, not device timezone
+  const t = chicagoParts();
+  const updatedHM = `${t.hour}:${t.minute}`;
+  el.mktUpdated.textContent = `Updated ${updatedHM}`;
 
-  localStorage.setItem(LS_MARKETS, JSON.stringify(d));
+  localStorage.setItem(LS_MARKETS, JSON.stringify({
+    ...d,
+    updated_hm: updatedHM
+  }));
 }
 
-/* --- Top updates --- */
-function updateTop(el){
-  const now = new Date();
-  el.greeting.textContent = `${greetingForHour(now.getHours())}, ${CFG.name}!`;
-  el.dateLine.textContent = dateLine(now);
-  el.clock.textContent = formatTime(now);
-}
+/* -------------------- Boot -------------------- */
 
-function scheduleMinuteClock(el){
-  updateTop(el);
-  const ms = (60 - new Date().getSeconds())*1000 + 50;
-  setTimeout(() => {
-    updateTop(el);
-    setInterval(() => updateTop(el), 60*1000);
-  }, ms);
-}
-
-/* --- Boot --- */
 document.addEventListener("DOMContentLoaded", () => {
   const el = {
     greeting: document.getElementById("greeting"),
     dateLine: document.getElementById("dateLine"),
     clock: document.getElementById("clock"),
-    updated: document.getElementById("updated"),
 
     wxIcon: document.getElementById("wxIcon"),
     wxTemp: document.getElementById("wxTemp"),
     wxDesc: document.getElementById("wxDesc"),
     wxHi: document.getElementById("wxHi"),
     wxLo: document.getElementById("wxLo"),
+
     week: document.getElementById("week"),
 
     spy: document.getElementById("spy"),
     iau: document.getElementById("iau"),
     mktUpdated: document.getElementById("mktUpdated"),
 
+    updated: document.getElementById("updated"),
+
     mktIcon: document.getElementById("mktIcon"),
     weekIcon: document.getElementById("weekIcon")
   };
 
-  // Header icons
+  // Icons
   if (el.mktIcon) el.mktIcon.innerHTML = iconChart();
   if (el.weekIcon) el.weekIcon.innerHTML = iconWeek();
 
-  // 1) instant paint from cache (prevents “empty” look)
+  // Instant paint from cache (prevents empty look on e-ink)
   tryRenderCached(el);
 
-  // 2) clock
+  // Time/date locked to Chicago
   scheduleMinuteClock(el);
 
-  // 3) background refresh (parallel)
+  // Background fetch
   Promise.allSettled([loadWeather(el), loadMarkets(el)]).finally(() => {
-    if (el.updated) el.updated.textContent = `Loaded ${formatTime(new Date())}`;
+    const t = chicagoParts();
+    el.updated.textContent = `Loaded ${t.hour}:${t.minute}`;
   });
 
-  // 4) periodic refresh (e-ink friendly)
-  setInterval(() => loadWeather(el).catch(()=>{}), 30*60*1000);
-  setInterval(() => loadMarkets(el).catch(()=>{}), 30*60*1000);
+  // Periodic refresh (e-ink friendly)
+  setInterval(() => loadWeather(el).catch(() => {}), 30 * 60 * 1000);
+  setInterval(() => loadMarkets(el).catch(() => {}), 30 * 60 * 1000);
 });
