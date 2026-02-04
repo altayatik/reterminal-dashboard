@@ -1,54 +1,82 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>reTerminal Dashboard</title>
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>E-Ink Dashboard</title>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="stage" aria-label="800 by 480 dashboard">
-    <header class="header">
-      <div>
-        <h1>reTerminal</h1>
-        <p class="sub">Simple dashboard (800×480)</p>
+
+<main class="stage">
+
+  <header class="top">
+    <div>
+      <div class="headline" id="greeting">Hello</div>
+      <div class="subline" id="dateLine">--</div>
+    </div>
+    <div class="clock" id="clock">--:--</div>
+  </header>
+
+  <section class="grid">
+
+    <!-- current weather -->
+    <article class="card">
+      <div class="cardTitle">
+        <span class="icon" id="wxIcon"></span>
+        <span>Weather</span>
       </div>
-      <div class="right">
-        <div class="pill" id="clock">--:--:--</div>
+
+      <div class="wxMain">
+        <div class="wxTemp" id="wxTemp">--°</div>
+        <div class="wxDesc" id="wxDesc">--</div>
       </div>
-    </header>
 
-    <section class="grid">
-      <article class="card">
-        <h2>Status</h2>
-        <p class="big" id="statusText">OK</p>
-        <p class="muted">Replace this with real device/app data later.</p>
-      </article>
+      <div class="wxMeta">
+        <div><span class="k">Hi</span> <span class="v" id="wxHi">--°</span></div>
+        <div><span class="k">Lo</span> <span class="v" id="wxLo">--°</span></div>
+      </div>
+    </article>
 
-      <article class="card">
-        <h2>Notes</h2>
-        <ul class="list">
-          <li>Deploy via GitHub Pages</li>
-          <li>Open in reTerminal browser</li>
-          <li>Iterate from here</li>
-        </ul>
-      </article>
+    <!-- markets -->
+    <article class="card">
+      <div class="cardTitle">
+        <span class="icon" id="mktIcon"></span>
+        <span>Markets</span>
+      </div>
 
-      <article class="card span2">
-        <h2>Log</h2>
-        <div class="log" id="log">
-          <div>Welcome. This is a starter layout.</div>
-          <div>Edit <code>index.html</code>, <code>styles.css</code>, <code>app.js</code>.</div>
-        </div>
-      </article>
-    </section>
+      <div class="row">
+        <div class="label">SPY</div>
+        <div class="value" id="spy">--</div>
+      </div>
 
-    <footer class="footer">
-      <span>v0.1</span>
-      <span class="muted">No frameworks. Single page. Easy to extend.</span>
-    </footer>
-  </main>
+      <div class="row">
+        <div class="label">IAU</div>
+        <div class="value" id="iau">--</div>
+      </div>
 
-  <script src="app.js"></script>
+      <div class="tiny muted" id="mktUpdated">--</div>
+    </article>
+
+    <!-- week -->
+    <article class="card span2">
+      <div class="cardTitle">
+        <span class="icon" id="weekIcon"></span>
+        <span>Next 7 days</span>
+      </div>
+
+      <div class="week" id="week"></div>
+    </article>
+
+  </section>
+
+  <footer class="footer">
+    <span class="tiny muted" id="updated">--</span>
+  </footer>
+
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
