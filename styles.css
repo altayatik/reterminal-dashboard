@@ -1,4 +1,5 @@
 :root{
+  --bg:#fff;
   --ink:#111;
   --muted:#555;
   --light:#e6e6e6;
@@ -9,7 +10,7 @@
 html,body{
   margin:0;
   height:100%;
-  background:#fff;
+  background:var(--bg);
   color:var(--ink);
   font-family:system-ui,Segoe UI,Arial,sans-serif;
   display:grid;
@@ -23,6 +24,7 @@ html,body{
   display:grid;
   grid-template-rows:auto 1fr auto;
   gap:14px;
+  background:var(--bg);
 }
 
 .top{
@@ -52,6 +54,45 @@ html,body{
   border-radius:999px;
   font-variant-numeric:tabular-nums;
 }
+
+.topRight{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.themeToggle{
+  background:none;
+  border:2px solid var(--ink);
+  color:var(--ink);
+  width:34px;
+  height:34px;
+  border-radius:999px;
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+  padding:0;
+}
+
+.themeToggle svg{
+  width:18px;
+  height:18px;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+/* default = day -> show moon */
+.themeToggle .iconSun{ display:none; }
+
+/* night -> show sun */
+html.invert .themeToggle .iconMoon{ display:none; }
+html.invert .themeToggle .iconSun{ display:block; }
+
+.themeToggle:active{ transform:scale(.96); }
 
 .grid{
   display:grid;
@@ -86,7 +127,6 @@ html,body{
   place-items:center;
 }
 
-/* Ensure inline SVG icons actually fit the icon box */
 .icon svg{
   width:100%;
   height:100%;
@@ -186,10 +226,17 @@ html,body{
 .tiny{font-size:11px}
 .muted{color:var(--muted)}
 
-/* Add this at the bottom */
 .card.stale .cardTitle,
 .card.stale .value,
-.card.stale .tiny {
-  color: var(--muted);
-  font-style: italic;
+.card.stale .tiny{
+  color:var(--muted);
+  font-style:italic;
+}
+
+/* whole-page invert (applied to <html>) */
+html.invert{
+  --bg:#000;
+  --ink:#fff;
+  --muted:#bbb;
+  --light:#444;
 }
