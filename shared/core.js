@@ -108,9 +108,21 @@ function isReTerminalMode() {
   return params.get("rt") === "1";
 }
 
+/* ✅ NEW: detect the /e-ink route by body class */
+function isEinkRoute() {
+  return document.body?.classList?.contains("eink") === true;
+}
+
 export function updateStageScale() {
   const stage = document.querySelector(".stage");
   if (!stage) return;
+
+  /* ✅ NEW: never stage-scale on e-ink */
+  if (isEinkRoute()) {
+    document.documentElement.classList.remove("rt");
+    document.documentElement.style.setProperty("--stage-scale", "1");
+    return;
+  }
 
   const rt = isReTerminalMode();
   document.documentElement.classList.toggle("rt", rt);

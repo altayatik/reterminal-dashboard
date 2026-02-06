@@ -29,6 +29,22 @@ function fmtPrice(p) {
   })}`;
 }
 
+/* ---------------- E-ink fit (fix preview zoom/crop) ---------------- */
+
+function applyEinkFit() {
+  const fit = document.querySelector(".einkFit");
+  if (!fit) return;
+
+  // Use real runtime viewport (iframe-safe)
+  const vw = window.innerWidth || document.documentElement.clientWidth || 800;
+  const vh = window.innerHeight || document.documentElement.clientHeight || 480;
+
+  // Scale DOWN only; never enlarge above 1
+  const scale = Math.min(1, vw / 800, vh / 480);
+
+  document.documentElement.style.setProperty("--eink-scale", String(scale));
+}
+
 /* ---------------- World clock (main card) ---------------- */
 
 function renderWorldClockStrip(container) {
@@ -141,12 +157,19 @@ function makeCardLink(node, href) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // ✅ Detect the fixed 800x480 e-ink route via body class
   const isEink = document.body.classList.contains("eink");
 
-  // ✅ Only scale on non-eink routes
   if (!isEink) {
     initStageScale();
+  } else {
+    // Deterministic fit inside SenseCraft preview / iframes
+    applyEinkFit();
+    window.addEventListener("resize", applyEinkFit, { passive: true });
+
+    // Some hosts update size after initial paint; do a couple of delayed fits
+    setTimeout(applyEinkFit, 0);
+    setTimeout(applyEinkFit, 150);
+    setTimeout(applyEinkFit, 500);
   }
 
   const el = {
@@ -183,11 +206,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (el.mktIcon) el.mktIcon.innerHTML = iconChart();
   if (el.wcIcon) el.wcIcon.innerHTML = iconClock();
 
-  // World clock strip (horizontal tiles)
   renderWorldClockStrip(el.wcStrip);
   tickWorldClockStrip(el.wcStrip);
 
-  // Align ticks to the next minute boundary
   const msToNextMinute = (60 - new Date().getSeconds()) * 1000 + 50;
   setTimeout(() => {
     tickWorldClockStrip(el.wcStrip);
@@ -201,7 +222,6 @@ document.addEventListener("DOMContentLoaded", () => {
     el.updated.textContent = `Loaded ${tp.hour}:${tp.minute}`;
   }
 
-  // ✅ Links must be different when running under /e-ink/
   const base = isEink ? "../" : "./";
 
   makeCardLink($("weatherCard"), `${base}weather/`);

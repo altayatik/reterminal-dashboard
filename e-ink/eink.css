@@ -3,10 +3,14 @@
   --ink:#111;
   --muted:#555;
   --light:#e6e6e6;
+
+  /* JS sets this; default 1 */
+  --eink-scale: 1;
 }
 
 *{ box-sizing:border-box; }
 
+/* Hard reset to beat shared styles */
 html, body{
   margin:0 !important;
   padding:0 !important;
@@ -20,12 +24,11 @@ html, body{
   text-size-adjust:100% !important;
 }
 
-/* Viewport: always fills whatever SenseCraft/iframe gives us */
+/* Viewport overlay: always fill host iframe/modal */
 body.eink{
   background:var(--bg) !important;
 }
 
-/* Centering surface */
 body.eink .einkViewport{
   position:fixed !important;
   inset:0 !important;
@@ -35,21 +38,15 @@ body.eink .einkViewport{
   background:var(--bg) !important;
 }
 
-/*
-  FIT LAYER:
-  Keep a logical 800x480 canvas, but scale DOWN if preview is smaller.
-  (Never scale up above 1.)
-*/
+/* Scale ONLY this wrapper (JS computes exact fit) */
 body.eink .einkFit{
   width:800px !important;
   height:480px !important;
   transform-origin:center center !important;
-
-  /* scale = min(1, vw/800, vh/480) */
-  transform: scale(min(1, calc(100vw / 800), calc(100vh / 480))) !important;
+  transform: scale(var(--eink-scale)) !important;
 }
 
-/* Stage stays 800x480 — no transforms here */
+/* Stage is always logical 800x480, no transform */
 body.eink .stage{
   width:800px !important;
   height:480px !important;
@@ -65,7 +62,7 @@ body.eink .stage{
   transform:none !important;
 }
 
-/* ===== Your original styles ===== */
+/* ===== Your component styles ===== */
 body.eink .top{
   display:flex;
   justify-content:space-between;
