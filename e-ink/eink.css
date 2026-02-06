@@ -1,3 +1,6 @@
+/* e-ink.css — DROP-IN REPLACEMENT */
+
+/* ===== Tokens ===== */
 :root{
   --bg:#fff;
   --ink:#111;
@@ -7,35 +10,62 @@
 
 *{ box-sizing:border-box; }
 
-html,body{
+/* ===== Page sizing + centering (robust in iframes/previews) ===== */
+/* Use viewport units instead of height:100% so flex centering works everywhere */
+html{
+  width:100vw;
+  height:100vh;
   margin:0;
-  height:100%;
-  background: var(--bg);
-  color: var(--ink);
+  padding:0;
+  background:var(--bg);
+}
+
+body{
+  width:100vw;
+  height:100vh;
+  margin:0;
+  padding:0;
+  background:var(--bg);
+  color:var(--ink);
   font-family: system-ui, Segoe UI, Arial, sans-serif;
 }
 
-/* Force center the exact 800x480 canvas */
-body{
+/* Center ONLY the e-ink page */
+body.eink{
   display:flex;
   align-items:center;
   justify-content:center;
   overflow:hidden;
 }
 
-/* Fixed stage for reTerminal */
-.stage{
+/* ===== Fixed stage for reTerminal ===== */
+body.eink .stage{
   width:800px;
   height:480px;
   padding:18px;
+
   display:grid;
   grid-template-rows:auto 1fr auto;
   gap:14px;
+
   background:var(--bg);
+
+  /* prevent any inherited layout rules from styles.css from shifting it */
+  margin:0;
+  flex:0 0 auto;
 }
 
-/* The rest should match your normal styles (copy-paste from styles.css if needed) */
-.top{
+/* If the preview container is smaller than 800x480, scale down instead of clipping.
+   Remove this block if you NEVER want scaling. */
+@supports (transform: scale(1)) {
+  body.eink .stage{
+    transform-origin:center center;
+    transform: scale(min(calc(100vw / 800), calc(100vh / 480)));
+  }
+}
+
+/* ===== Header ===== */
+body.eink .top{
   display:flex;
   justify-content:space-between;
   align-items:flex-start;
@@ -43,12 +73,12 @@ body{
   padding-bottom:8px;
 }
 
-.headline{ font-size:28px; font-weight:800; }
-.subline{ margin-top:4px; font-size:14px; color:var(--muted); }
+body.eink .headline{ font-size:28px; font-weight:800; }
+body.eink .subline{ margin-top:4px; font-size:14px; color:var(--muted); }
 
-.topRight{ display:flex; align-items:center; gap:10px; }
+body.eink .topRight{ display:flex; align-items:center; gap:10px; }
 
-.clock{
+body.eink .clock{
   font-size:30px;
   font-weight:800;
   border:2px solid var(--ink);
@@ -57,7 +87,8 @@ body{
   font-variant-numeric:tabular-nums;
 }
 
-.themeToggle{
+/* ===== Theme Toggle ===== */
+body.eink .themeToggle{
   background:none;
   border:2px solid var(--ink);
   color:var(--ink);
@@ -70,8 +101,9 @@ body{
   padding:0;
 }
 
-.themeToggle svg{
-  width:18px; height:18px;
+body.eink .themeToggle svg{
+  width:18px;
+  height:18px;
   display:block;
   fill:none;
   stroke:currentColor;
@@ -81,18 +113,19 @@ body{
 }
 
 /* day -> show moon */
-.themeToggle .iconSun{ display:none; }
+body.eink .themeToggle .iconSun{ display:none; }
 /* night -> show sun */
-html.invert .themeToggle .iconMoon{ display:none; }
-html.invert .themeToggle .iconSun{ display:block; }
+html.invert body.eink .themeToggle .iconMoon{ display:none; }
+html.invert body.eink .themeToggle .iconSun{ display:block; }
 
-.grid{
+/* ===== Grid ===== */
+body.eink .grid{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:14px;
 }
 
-.card{
+body.eink .card{
   border:2px solid var(--ink);
   border-radius:14px;
   padding:12px;
@@ -100,9 +133,9 @@ html.invert .themeToggle .iconSun{ display:block; }
   gap:10px;
 }
 
-.span2{ grid-column: span 2; }
+body.eink .span2{ grid-column: span 2; }
 
-.cardTitle{
+body.eink .cardTitle{
   display:flex;
   align-items:center;
   gap:8px;
@@ -112,37 +145,38 @@ html.invert .themeToggle .iconSun{ display:block; }
   text-transform:uppercase;
 }
 
-.icon{ width:22px; height:22px; display:grid; place-items:center; }
-.icon svg{ width:100%; height:100%; display:block; }
+body.eink .icon{ width:22px; height:22px; display:grid; place-items:center; }
+body.eink .icon svg{ width:100%; height:100%; display:block; }
 
-/* Weather card styles */
-.wxMain{ display:flex; justify-content:space-between; align-items:baseline; }
-.wxTemp{ font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; }
-.wxDesc{ font-size:16px; font-weight:700; text-align:right; }
+/* ===== Weather card styles ===== */
+body.eink .wxMain{ display:flex; justify-content:space-between; align-items:baseline; }
+body.eink .wxTemp{ font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; }
+body.eink .wxDesc{ font-size:16px; font-weight:700; text-align:right; }
 
-.wxMeta{ display:flex; gap:18px; font-size:16px; }
-.k{ color:var(--muted); }
-.v{ font-weight:800; }
+body.eink .wxMeta{ display:flex; gap:18px; font-size:16px; }
+body.eink .k{ color:var(--muted); }
+body.eink .v{ font-weight:800; }
 
-.row{
+/* ===== Markets ===== */
+body.eink .row{
   display:flex;
   justify-content:space-between;
   border-top:1px solid var(--light);
   padding:6px 0;
 }
-.row:first-of-type{ border-top:none; }
+body.eink .row:first-of-type{ border-top:none; }
 
-.label{ color:var(--muted); font-weight:800; }
-.value{ font-weight:900; font-size:22px; font-variant-numeric:tabular-nums; }
+body.eink .label{ color:var(--muted); font-weight:800; }
+body.eink .value{ font-weight:900; font-size:22px; font-variant-numeric:tabular-nums; }
 
-/* World clock strip */
-.wcList{
+/* ===== World clock strip ===== */
+body.eink .wcList{
   display:grid;
   grid-template-columns:repeat(5, 1fr);
   gap:8px;
 }
 
-.wcTile{
+body.eink .wcTile{
   border:1px solid var(--light);
   border-radius:10px;
   padding:8px 6px;
@@ -151,29 +185,29 @@ html.invert .themeToggle .iconSun{ display:block; }
   justify-items:center;
 }
 
-.wcCity{
+body.eink .wcCity{
   font-size:12px;
   font-weight:900;
   color:var(--muted);
 }
 
-.wcTime{
+body.eink .wcTime{
   font-size:16px;
   font-weight:900;
   font-variant-numeric:tabular-nums;
 }
 
-/* Footer */
-.footer{
+/* ===== Footer ===== */
+body.eink .footer{
   border-top:2px solid var(--ink);
   padding-top:6px;
   display:flex;
   justify-content:flex-end;
 }
-.tiny{ font-size:11px; }
-.muted{ color:var(--muted); }
+body.eink .tiny{ font-size:11px; }
+body.eink .muted{ color:var(--muted); }
 
-/* Night mode */
+/* ===== Night mode ===== */
 html.invert{
   --bg:#000;
   --ink:#fff;
