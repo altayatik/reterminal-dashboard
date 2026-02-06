@@ -421,4 +421,36 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, 8000);
 
+
+    // --- Desktop scaling: keep 800x480 design, scale to fit viewport ---
+  function updateStageScale(){
+    const stage = document.querySelector(".stage");
+    if (!stage) return;
+
+    // Only scale in desktop mode (CSS switches to responsive below 900px)
+    if (window.matchMedia("(max-width: 900px)").matches) {
+      document.documentElement.style.setProperty("--stage-scale", "1");
+      return;
+    }
+
+    const PAD = 40; // safe breathing room around the stage
+    const vw = window.innerWidth - PAD;
+    const vh = window.innerHeight - PAD;
+
+    const scale = Math.min(vw / 800, vh / 480);
+
+    // cap scale so it doesn't get comically huge on ultra-wide monitors
+    const capped = Math.min(scale, 2.0);
+
+    document.documentElement.style.setProperty(
+      "--stage-scale",
+      String(capped)
+    );
+  }
+
+  updateStageScale();
+  window.addEventListener("resize", updateStageScale);
+
+
 });
+
