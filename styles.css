@@ -612,24 +612,23 @@ html.invert{
 }
 
 /* =========================================================
-   E-ink preview exception (SenseCraft / iframe preview)
-   Forces pixel-perfect 800x480 and avoids accidental cutoff.
+   E-ink / SenseCraft preview mode
+   Keep pixel-perfect 800×480 stage, but SCALE TO FIT the preview box.
    ========================================================= */
 html.eink body{
-  display:block;     /* stop centering grid */
-  overflow:hidden;   /* preview expects no scroll */
+  display:grid;       /* center inside the preview viewport */
+  place-items:center;
+  overflow:hidden;
 }
 
-/* Ensure stage is exactly the device resolution, no transform */
+/* Keep the stage size, use transform scale to fit */
 html.eink .stage{
-  width:800px !important;
-  height:480px !important;
-  transform:none !important;
-  transform-origin:unset !important;
-  margin:0 auto;
+  width:800px;
+  height:480px;
+  transform: scale(var(--stage-scale));
+  transform-origin:center center;
 }
 
-/* Slightly tighten vertical rhythm to prevent 1-2px overflow due to font metrics */
+/* Reduce risk of 1-2px cutoff from font metrics */
 html.eink .top{ padding-bottom:6px; }
 html.eink .footer{ padding-top:4px; }
-html.eink .card{ gap:8px; }

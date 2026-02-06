@@ -1,5 +1,4 @@
 // shared/core.js
-// Single source for: theme, clock/date line, stage scaling, back button, tiny DOM helper.
 
 export const CFG = window.DASH_CONFIG ?? {
   name: "Altay",
@@ -105,65 +104,60 @@ export function initBack(btn, fallbackHref = "../") {
 }
 
 /**
- * Detect an "embedded e-ink preview" environment (SenseCraft modal/iframe).
- * Heuristic: small viewport near 800×480 ratio OR explicitly forced via ?eink=1
+ * SenseCraft preview / embedded environment heuristic.
+ * - iframe/modal often has a constrained viewport
+ * - we want to "fit" the 800×480 stage inside it (no reflow)
  */
 function isEinkPreview() {
   const params = new URLSearchParams(location.search);
   if (params.get("eink") === "1") return true;
 
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-
-  // Many previews give slightly smaller than 800x480 due to chrome/padding.
-  // Trigger when it's "close enough" and not a typical phone/tablet shape.
-  const ratio = w / h;
-  const target = 800 / 480; // 1.666...
-  const closeRatio = Math.abs(ratio - target) < 0.18;
-
-  const withinSizeBand =
-    (w >= 620 && w <= 920) &&
-    (h >= 380 && h <= 620);
-
-  // Also common in iframes: reduced viewport + no scroll
   const embedded = window.self !== window.top;
 
-  return closeRatio && withinSizeBand && (embedded || h <= 560);
+  // SenseCraft preview tends to be embedded + landscape-ish + not phone-sized.
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const ratio = w / h;
+  const target = 800 / 480;
+  const closeRatio = Math.abs(ratio - target) < 0.35;
+
+  return embedded && closeRatio && w < 1100 && h < 900;
 }
 
-function applyEinkMode(on) {
+function setEinkMode(on) {
   document.documentElement.classList.toggle("eink", on);
-  // In eink mode we want pixel-perfect stage at 800x480 with no transform.
-  if (on) {
-    document.documentElement.style.setProperty("--stage-scale", "1");
-  }
 }
 
+/**
+ * Desktop behavior:
+ * - default: scale stage up/down to fit window
+ * Mobile/tablet:
+ * - CSS reflows at <=900px (unless eink preview)
+ * E-ink preview:
+ * - NEVER reflow; always keep 800x480 stage and scale to fit viewport box
+ */
 export function updateStageScale() {
   const stage = document.querySelector(".stage");
   if (!stage) return;
 
-  // Mobile/tablet: CSS handles reflow; disable pixel-stage scaling
-  if (window.matchMedia("(max-width: 900px)").matches && !isEinkPreview()) {
-    applyEinkMode(false);
+  const eink = isEinkPreview();
+  setEinkMode(eink);
+
+  // Mobile/tablet reflow only when NOT eink preview
+  if (window.matchMedia("(max-width: 900px)").matches && !eink) {
     document.documentElement.style.setProperty("--stage-scale", "1");
     return;
   }
 
-  // E-ink preview: force exact stage, no scaling
-  if (isEinkPreview()) {
-    applyEinkMode(true);
-    return;
-  }
-
-  applyEinkMode(false);
-
-  const PAD = 40;
-  const vw = window.innerWidth - PAD;
-  const vh = window.innerHeight - PAD;
+  // Fit-to-box scaling (works for eink preview AND desktop)
+  const PAD = eink ? 16 : 40; // tighter padding in preview boxes
+  const vw = Math.max(100, window.innerWidth - PAD);
+  const vh = Math.max(100, window.innerHeight - PAD);
 
   const scale = Math.min(vw / 800, vh / 480);
-  const capped = Math.min(scale, 2.0);
+
+  // In normal desktop, cap how big it gets; in preview, never exceed 1
+  const capped = eink ? Math.min(scale, 1) : Math.min(scale, 2.0);
 
   document.documentElement.style.setProperty("--stage-scale", String(capped));
 }
