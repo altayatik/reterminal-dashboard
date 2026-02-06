@@ -50,7 +50,6 @@ export function getInvert() {
 }
 
 export function applyThemeForTime(t, themeBtn) {
-  // reset override at exact boundaries so it follows schedule again
   const atNightBoundary = (t.hour24 === 21 && t.minute === "00");
   const atDayBoundary   = (t.hour24 === 8  && t.minute === "00");
   if (atNightBoundary || atDayBoundary) localStorage.removeItem(LS_THEME_OVERRIDE);
@@ -78,15 +77,86 @@ export function initTheme(themeBtn) {
   });
 }
 
+export function initTopClock({ clockEl, dateLineEl, themeBtn }) {
+  const tick = () => {
+    const t = timeParts();
+    applyThemeForTime(t, themeBtn);
+
+    if (clockEl) clockEl.textContent = `${t.hour}:${t.minute}`;
+    if (dateLineEl) dateLineEl.textContent =
+      `${t.month}/${t.day}/${t.year} · ${t.weekday} · ${t.hour}:${t.minute}`;
+  };
+
+  tick();
+
+  const msToNextMinute = (60 - new Date().getSeconds()) * 1000 + 50;
+  setTimeout(() => {
+    tick();
+    setInterval(tick, 60 * 1000);
+  }, msToNextMinute);
+}
+
+export function initBack(btn, fallbackHref = "../") {
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    if (history.length > 1) history.back();
+    else window.location.href = fallbackHref;
+  });
+}
+
+/**
+ * Detect an "embedded e-ink preview" environment (SenseCraft modal/iframe).
+ * Heuristic: small viewport near 800×480 ratio OR explicitly forced via ?eink=1
+ */
+function isEinkPreview() {
+  const params = new URLSearchParams(location.search);
+  if (params.get("eink") === "1") return true;
+
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  // Many previews give slightly smaller than 800x480 due to chrome/padding.
+  // Trigger when it's "close enough" and not a typical phone/tablet shape.
+  const ratio = w / h;
+  const target = 800 / 480; // 1.666...
+  const closeRatio = Math.abs(ratio - target) < 0.18;
+
+  const withinSizeBand =
+    (w >= 620 && w <= 920) &&
+    (h >= 380 && h <= 620);
+
+  // Also common in iframes: reduced viewport + no scroll
+  const embedded = window.self !== window.top;
+
+  return closeRatio && withinSizeBand && (embedded || h <= 560);
+}
+
+function applyEinkMode(on) {
+  document.documentElement.classList.toggle("eink", on);
+  // In eink mode we want pixel-perfect stage at 800x480 with no transform.
+  if (on) {
+    document.documentElement.style.setProperty("--stage-scale", "1");
+  }
+}
+
 export function updateStageScale() {
   const stage = document.querySelector(".stage");
   if (!stage) return;
 
-  // mobile/tablet: CSS handles reflow; disable pixel-stage scaling
-  if (window.matchMedia("(max-width: 900px)").matches) {
+  // Mobile/tablet: CSS handles reflow; disable pixel-stage scaling
+  if (window.matchMedia("(max-width: 900px)").matches && !isEinkPreview()) {
+    applyEinkMode(false);
     document.documentElement.style.setProperty("--stage-scale", "1");
     return;
   }
+
+  // E-ink preview: force exact stage, no scaling
+  if (isEinkPreview()) {
+    applyEinkMode(true);
+    return;
+  }
+
+  applyEinkMode(false);
 
   const PAD = 40;
   const vw = window.innerWidth - PAD;
@@ -101,32 +171,4 @@ export function updateStageScale() {
 export function initStageScale() {
   updateStageScale();
   window.addEventListener("resize", updateStageScale);
-}
-
-export function initTopClock({ clockEl, dateLineEl, themeBtn }) {
-  const tick = () => {
-    const t = timeParts();
-    applyThemeForTime(t, themeBtn);
-
-    if (clockEl) clockEl.textContent = `${t.hour}:${t.minute}`;
-    if (dateLineEl) dateLineEl.textContent =
-      `${t.month}/${t.day}/${t.year} · ${t.weekday} · ${t.hour}:${t.minute}`;
-  };
-
-  tick();
-
-  // align to next minute boundary, then 60s ticks
-  const msToNextMinute = (60 - new Date().getSeconds()) * 1000 + 50;
-  setTimeout(() => {
-    tick();
-    setInterval(tick, 60 * 1000);
-  }, msToNextMinute);
-}
-
-export function initBack(btn, fallbackHref = "../") {
-  if (!btn) return;
-  btn.addEventListener("click", () => {
-    if (history.length > 1) history.back();
-    else window.location.href = fallbackHref;
-  });
 }

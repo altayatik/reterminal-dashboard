@@ -610,3 +610,26 @@ html.invert{
 @media (min-width: 601px) and (max-width: 900px){
   .wcList{ grid-template-columns:repeat(4, 1fr); }
 }
+
+/* =========================================================
+   E-ink preview exception (SenseCraft / iframe preview)
+   Forces pixel-perfect 800x480 and avoids accidental cutoff.
+   ========================================================= */
+html.eink body{
+  display:block;     /* stop centering grid */
+  overflow:hidden;   /* preview expects no scroll */
+}
+
+/* Ensure stage is exactly the device resolution, no transform */
+html.eink .stage{
+  width:800px !important;
+  height:480px !important;
+  transform:none !important;
+  transform-origin:unset !important;
+  margin:0 auto;
+}
+
+/* Slightly tighten vertical rhythm to prevent 1-2px overflow due to font metrics */
+html.eink .top{ padding-bottom:6px; }
+html.eink .footer{ padding-top:4px; }
+html.eink .card{ gap:8px; }
