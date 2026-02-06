@@ -1,4 +1,4 @@
-/* e-ink.css — DROP-IN REPLACEMENT (centers correctly in iframes/previews) */
+/* e-ink.css — DROP-IN REPLACEMENT (absolute-centering, iframe-proof) */
 
 :root{
   --bg:#fff;
@@ -9,35 +9,42 @@
 
 *{ box-sizing:border-box; }
 
-/* Hard reset – shared styles sometimes sneak in */
+/* Hard reset */
 html, body{
   margin:0 !important;
   padding:0 !important;
-  width:100% !important;
-  height:100% !important;
-  background:var(--bg);
-  color:var(--ink);
-  font-family: system-ui, Segoe UI, Arial, sans-serif;
-  overflow:hidden !important;
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+  font-family: system-ui, Segoe UI, Arial, sans-serif !important;
 }
+
+/* Make sure the page has a real box to center within */
+html{ width:100vw !important; height:100vh !important; overflow:hidden !important; }
+body{ width:100vw !important; height:100vh !important; overflow:hidden !important; }
 
 /*
-  Key trick:
-  In SenseCraft/embedded iframes, 100% height can be unreliable.
-  Fixed positioning guarantees a real 2D box to center inside.
+  THE FIX:
+  Don’t use flex/grid centering — use absolute centering.
+  This ignores “height: 100%” and iframe quirks.
 */
 body.eink{
-  position:fixed !important;
-  inset:0 !important;            /* top/right/bottom/left: 0 */
-  display:grid !important;
-  place-items:center !important;
-  background:var(--bg);
+  position: relative !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  background: var(--bg) !important;
 }
 
-/* Fixed 800x480 canvas */
+/* Fixed stage centered with absolute positioning */
 body.eink .stage{
   width:800px !important;
   height:480px !important;
+
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+
   margin:0 !important;
   padding:18px;
 
@@ -46,13 +53,10 @@ body.eink .stage{
   gap:14px;
 
   background:var(--bg);
-
-  /* make sure nothing is scaling/offsetting it */
-  transform:none !important;
 }
 
 /* ===== Header ===== */
-body.eink .top{
+.top{
   display:flex;
   justify-content:space-between;
   align-items:flex-start;
@@ -60,12 +64,12 @@ body.eink .top{
   padding-bottom:8px;
 }
 
-body.eink .headline{ font-size:28px; font-weight:800; }
-body.eink .subline{ margin-top:4px; font-size:14px; color:var(--muted); }
+.headline{ font-size:28px; font-weight:800; }
+.subline{ margin-top:4px; font-size:14px; color:var(--muted); }
 
-body.eink .topRight{ display:flex; align-items:center; gap:10px; }
+.topRight{ display:flex; align-items:center; gap:10px; }
 
-body.eink .clock{
+.clock{
   font-size:30px;
   font-weight:800;
   border:2px solid var(--ink);
@@ -75,7 +79,7 @@ body.eink .clock{
 }
 
 /* ===== Theme Toggle ===== */
-body.eink .themeToggle{
+.themeToggle{
   background:none;
   border:2px solid var(--ink);
   color:var(--ink);
@@ -88,7 +92,7 @@ body.eink .themeToggle{
   padding:0;
 }
 
-body.eink .themeToggle svg{
+.themeToggle svg{
   width:18px; height:18px;
   display:block;
   fill:none;
@@ -99,19 +103,19 @@ body.eink .themeToggle svg{
 }
 
 /* day -> show moon */
-body.eink .themeToggle .iconSun{ display:none; }
+.themeToggle .iconSun{ display:none; }
 /* night -> show sun */
-html.invert body.eink .themeToggle .iconMoon{ display:none; }
-html.invert body.eink .themeToggle .iconSun{ display:block; }
+html.invert .themeToggle .iconMoon{ display:none; }
+html.invert .themeToggle .iconSun{ display:block; }
 
 /* ===== Grid ===== */
-body.eink .grid{
+.grid{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:14px;
 }
 
-body.eink .card{
+.card{
   border:2px solid var(--ink);
   border-radius:14px;
   padding:12px;
@@ -119,9 +123,9 @@ body.eink .card{
   gap:10px;
 }
 
-body.eink .span2{ grid-column: span 2; }
+.span2{ grid-column: span 2; }
 
-body.eink .cardTitle{
+.cardTitle{
   display:flex;
   align-items:center;
   gap:8px;
@@ -131,38 +135,37 @@ body.eink .cardTitle{
   text-transform:uppercase;
 }
 
-body.eink .icon{ width:22px; height:22px; display:grid; place-items:center; }
-body.eink .icon svg{ width:100%; height:100%; display:block; }
+.icon{ width:22px; height:22px; display:grid; place-items:center; }
+.icon svg{ width:100%; height:100%; display:block; }
 
-/* ===== Weather ===== */
-body.eink .wxMain{ display:flex; justify-content:space-between; align-items:baseline; }
-body.eink .wxTemp{ font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; }
-body.eink .wxDesc{ font-size:16px; font-weight:700; text-align:right; }
+/* Weather card styles */
+.wxMain{ display:flex; justify-content:space-between; align-items:baseline; }
+.wxTemp{ font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; }
+.wxDesc{ font-size:16px; font-weight:700; text-align:right; }
 
-body.eink .wxMeta{ display:flex; gap:18px; font-size:16px; }
-body.eink .k{ color:var(--muted); }
-body.eink .v{ font-weight:800; }
+.wxMeta{ display:flex; gap:18px; font-size:16px; }
+.k{ color:var(--muted); }
+.v{ font-weight:800; }
 
-/* ===== Markets ===== */
-body.eink .row{
+.row{
   display:flex;
   justify-content:space-between;
   border-top:1px solid var(--light);
   padding:6px 0;
 }
-body.eink .row:first-of-type{ border-top:none; }
+.row:first-of-type{ border-top:none; }
 
-body.eink .label{ color:var(--muted); font-weight:800; }
-body.eink .value{ font-weight:900; font-size:22px; font-variant-numeric:tabular-nums; }
+.label{ color:var(--muted); font-weight:800; }
+.value{ font-weight:900; font-size:22px; font-variant-numeric:tabular-nums; }
 
-/* ===== World clock ===== */
-body.eink .wcList{
+/* World clock strip */
+.wcList{
   display:grid;
   grid-template-columns:repeat(5, 1fr);
   gap:8px;
 }
 
-body.eink .wcTile{
+.wcTile{
   border:1px solid var(--light);
   border-radius:10px;
   padding:8px 6px;
@@ -171,29 +174,29 @@ body.eink .wcTile{
   justify-items:center;
 }
 
-body.eink .wcCity{
+.wcCity{
   font-size:12px;
   font-weight:900;
   color:var(--muted);
 }
 
-body.eink .wcTime{
+.wcTime{
   font-size:16px;
   font-weight:900;
   font-variant-numeric:tabular-nums;
 }
 
-/* ===== Footer ===== */
-body.eink .footer{
+/* Footer */
+.footer{
   border-top:2px solid var(--ink);
   padding-top:6px;
   display:flex;
   justify-content:flex-end;
 }
-body.eink .tiny{ font-size:11px; }
-body.eink .muted{ color:var(--muted); }
+.tiny{ font-size:11px; }
+.muted{ color:var(--muted); }
 
-/* ===== Night mode ===== */
+/* Night mode */
 html.invert{
   --bg:#000;
   --ink:#fff;
