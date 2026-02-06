@@ -1,66 +1,63 @@
-/* ────────────────────────────────────────────────
-   E-INK VIEWPORT & FIT LAYER – IFRAME-FRIENDLY VERSION
-───────────────────────────────────────────────── */
+/* Kill shared scaling completely in e-ink mode */
+:root {
+  --stage-scale: 1 !important;
+}
 
+body.eink .stage {
+  transform: none !important;
+  transform-origin: unset !important;
+  scale: 1 !important;
+  width: 800px !important;
+  height: 480px !important;
+  max-width: 800px !important;
+  max-height: 480px !important;
+  margin: 0 !important;
+  padding: 18px;
+}
+
+/* Make body & viewport bulletproof for iframe/preview */
 body.eink {
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-  min-height: 100vh !important;          /* Ensures full height usage */
+  min-height: 100% !important;
+  height: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
+  overflow: hidden !important;
 }
 
-/* Full area we center inside – fight any parent iframe weirdness */
 body.eink .einkViewport {
   position: fixed !important;
   inset: 0 !important;
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-  background: var(--bg) !important;
-  overflow: hidden !important;
   width: 100% !important;
   height: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
+  overflow: hidden !important;
+  background: var(--bg) !important;
 }
 
-/* Fixed-size content block – NO scaling, just center it */
 body.eink .einkFit {
   width: 800px !important;
   height: 480px !important;
   max-width: 100% !important;
   max-height: 100% !important;
-  margin: auto !important;               /* Auto margins help in flex contexts */
-  background: var(--bg) !important;
-  /* Remove or comment out transform if still problematic */
-  /* transform: none !important; */
+  margin: auto !important;
 }
 
-/* Stage – lock dimensions, override any shared scaling */
-body.eink .stage {
-  width: 800px !important;
-  height: 480px !important;
-  max-width: 800px !important;
-  max-height: 480px !important;
-  margin: 0 !important;
-  padding: 18px !important;
-  display: grid !important;
-  grid-template-rows: auto 1fr auto !important;
-  gap: 14px !important;
-  background: var(--bg) !important;
-  transform: none !important;            /* Kill any inherited --stage-scale */
+/* If SenseCraft preview adds unwanted outer padding, this helps force full usage */
+@media (max-width: 820px), (max-height: 500px) {
+  body.eink .einkFit {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  body.eink .stage {
+    width: 100% !important;
+    height: 100% !important;
+    padding: 12px !important; /* smaller padding if forced full-screen */
+  }
 }
-
-/* Force override shared styles.css potential conflicts */
-body.eink html,
-body.eink body,
-body.eink .stage {
-  transform: none !important;
-  scale: 1 !important;
-}
-
-/* Rest of your CSS unchanged below... */
