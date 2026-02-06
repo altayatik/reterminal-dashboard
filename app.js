@@ -1,50 +1,9 @@
-// app.js — auto night mode + sun/moon toggle, full-page invert
-
-const CFG = window.DASH_CONFIG ?? {
-  name: "Altay",
-  timezone: "America/Chicago",
-  use24h: true
-};
+import { initStageScale, initTheme, initTopClock, $, CFG, timeParts } from "./shared/core.js";
+import { iconChart, iconWeek, iconWeather } from "./shared/icons.js";
+import { wxText } from "./shared/weather-utils.js";
 
 const LS_WEATHER = "dash_weather_embedded_v1";
 const LS_MARKETS = "dash_markets_embedded_v1";
-const LS_THEME_OVERRIDE = "dash_theme_override"; // "invert" | "normal"
-
-/* -------------------- Time helpers -------------------- */
-function chicagoParts() {
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: CFG.timezone,
-    weekday: "long",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: !CFG.use24h
-  });
-
-  const parts = fmt.formatToParts(new Date());
-  const m = {};
-  for (const p of parts) if (p.type !== "literal") m[p.type] = p.value;
-
-  const hour24 = Number(
-    new Intl.DateTimeFormat("en-US", {
-      timeZone: CFG.timezone,
-      hour: "2-digit",
-      hour12: false
-    }).format(new Date())
-  );
-
-  return {
-    weekday: m.weekday,
-    year: m.year,
-    month: m.month,
-    day: m.day,
-    hour: m.hour,
-    minute: m.minute,
-    hour24
-  };
-}
 
 function greetingForHour24(h) {
   if (h >= 5 && h < 12) return "Good morning";
@@ -53,185 +12,10 @@ function greetingForHour24(h) {
   return "Good night";
 }
 
-/* -------------------- Theme logic -------------------- */
-
-function isNightHour(hour24) {
-  return hour24 >= 21 || hour24 < 8;
+function fmtPrice(p) {
+  if (p == null || !Number.isFinite(Number(p))) return "--";
+  return `$${Number(p).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
-
-function setInvert(on) {
-  document.documentElement.classList.toggle("invert", on);
-}
-
-function getInvert() {
-  return document.documentElement.classList.contains("invert");
-}
-
-function applyThemeForTime(t, themeBtn) {
-  const atNightBoundary = (t.hour24 === 21 && t.minute === "00");
-  const atDayBoundary   = (t.hour24 === 8  && t.minute === "00");
-
-  if (atNightBoundary || atDayBoundary) {
-    localStorage.removeItem(LS_THEME_OVERRIDE);
-  }
-
-  const override = localStorage.getItem(LS_THEME_OVERRIDE);
-  const shouldInvert = override
-    ? override === "invert"
-    : isNightHour(t.hour24);
-
-  setInvert(shouldInvert);
-
-  if (themeBtn) {
-    themeBtn.setAttribute("aria-pressed", shouldInvert ? "true" : "false");
-    themeBtn.title = shouldInvert ? "Day mode" : "Night mode";
-  }
-}
-
-/* -------------------- Desktop stage scaling -------------------- */
-function updateStageScale(){
-  const stage = document.querySelector(".stage");
-  if (!stage) return;
-
-  // below 900px: responsive layout (CSS disables transform)
-  if (window.matchMedia("(max-width: 900px)").matches) {
-    document.documentElement.style.setProperty("--stage-scale", "1");
-    return;
-  }
-
-  const PAD = 40;
-  const vw = window.innerWidth - PAD;
-  const vh = window.innerHeight - PAD;
-
-  const scale = Math.min(vw / 800, vh / 480);
-  const capped = Math.min(scale, 2.0);
-
-  document.documentElement.style.setProperty("--stage-scale", String(capped));
-}
-
-/* -------------------- Top UI -------------------- */
-
-function updateTop(el) {
-  const t = chicagoParts();
-
-  applyThemeForTime(t, el.themeBtn);
-
-  el.greeting.textContent =
-    `${greetingForHour24(t.hour24)}, ${CFG.name}!`;
-
-  el.clock.textContent = `${t.hour}:${t.minute}`;
-  el.dateLine.textContent =
-    `${t.month}/${t.day}/${t.year} · ${t.weekday} · ${t.hour}:${t.minute}`;
-}
-
-function scheduleMinuteClock(el) {
-  updateTop(el);
-  const msToNextMinute = (60 - new Date().getSeconds()) * 1000 + 50;
-  setTimeout(() => {
-    updateTop(el);
-    setInterval(() => updateTop(el), 60 * 1000);
-  }, msToNextMinute);
-}
-
-/* -------------------- Icons -------------------- */
-
-function iconChart() {
-  return `
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-    <polyline points="17 6 23 6 23 12"></polyline>
-  </svg>`;
-}
-
-function iconWeek() {
-  return `
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-    <line x1="16" y1="2" x2="16" y2="6"></line>
-    <line x1="8" y1="2" x2="8" y2="6"></line>
-    <line x1="3" y1="10" x2="21" y2="10"></line>
-  </svg>`;
-}
-
-function iconWeather(code) {
-  const c = `fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round"`;
-
-  const kind =
-    (code === 0 || code === 1) ? "sun" :
-    (code === 2 || code === 3) ? "cloud" :
-    (code === 45 || code === 48) ? "fog" :
-    (code >= 51 && code <= 67) ? "rain" :
-    (code >= 71 && code <= 77) ? "snow" :
-    (code >= 80 && code <= 82) ? "rain" :
-    (code >= 95) ? "storm" : "cloud";
-
-  if (kind === "sun") return `
-  <svg viewBox="0 0 24 24" width="22" height="22">
-    <circle cx="12" cy="12" r="4" ${c}></circle>
-    <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" ${c}></path>
-  </svg>`;
-
-  if (kind === "fog") return `
-  <svg viewBox="0 0 24 24" width="22" height="22">
-    <path d="M4 10h16M6 14h12M4 18h16" ${c}></path>
-    <path d="M7 10a5 5 0 0 1 10 0" ${c}></path>
-  </svg>`;
-
-  if (kind === "rain") return `
-  <svg viewBox="0 0 24 24" width="22" height="22">
-    <path d="M7 18a4 4 0 0 1 0-8 6 6 0 0 1 11.6 1.6A3.5 3.5 0 1 1 18 18H7" ${c}></path>
-    <path d="M8 20l1-2M12 20l1-2M16 20l1-2" ${c}></path>
-  </svg>`;
-
-  if (kind === "snow") return `
-  <svg viewBox="0 0 24 24" width="22" height="22">
-    <path d="M7 17a4 4 0 0 1 0-8 6 6 0 0 1 11.6 1.6A3.5 3.5 0 1 1 18 17H7" ${c}></path>
-    <path d="M9 20h.01M12 20h.01M15 20h.01" ${c}></path>
-  </svg>`;
-
-  if (kind === "storm") return `
-  <svg viewBox="0 0 24 24" width="22" height="22">
-    <path d="M7 18a4 4 0 0 1 0-8 6 6 0 0 1 11.6 1.6A3.5 3.5 0 1 1 18 18H7" ${c}></path>
-    <path d="M13 13l-2 4h3l-2 4" ${c}></path>
-  </svg>`;
-
-  return `
-  <svg viewBox="0 0 24 24" width="22" height="22">
-    <path d="M7 18a4 4 0 0 1 0-8 6 6 0 0 1 11.6 1.6A3.5 3.5 0 1 1 18 18H7" ${c}></path>
-  </svg>`;
-}
-
-/* -------------------- Weather helpers -------------------- */
-
-const weatherCodes = {
-  0: "Clear sky",
-  1: "Mainly clear",
-  2: "Partly cloudy",
-  3: "Overcast",
-  45: "Fog",
-  48: "Depositing rime fog",
-  51: "Light drizzle",
-  53: "Moderate drizzle",
-  55: "Dense drizzle",
-  61: "Slight rain",
-  63: "Moderate rain",
-  65: "Heavy rain",
-  71: "Slight snow fall",
-  73: "Moderate snow fall",
-  75: "Heavy snow fall",
-  80: "Slight rain showers",
-  81: "Moderate rain showers",
-  82: "Violent rain showers",
-};
-
-function wxText(code) {
-  return weatherCodes[code] || "Unknown";
-}
-
-/* -------------------- Render week forecast -------------------- */
 
 function renderWeek(el, daily) {
   if (!daily?.time?.length) {
@@ -241,19 +25,16 @@ function renderWeek(el, daily) {
 
   el.innerHTML = "";
   daily.time.forEach((dateStr, i) => {
-    const dayEl = document.createElement("div");
-    dayEl.className = "day";
-
     const name = new Date(dateStr).toLocaleDateString("en-US", { weekday: "short" });
     const hi = Math.round(daily.temperature_2m_max[i]);
     const lo = Math.round(daily.temperature_2m_min[i]);
-
     const code = Array.isArray(daily.weather_code) ? daily.weather_code[i] : null;
-    const icon = code != null ? iconWeather(code) : "";
 
+    const dayEl = document.createElement("div");
+    dayEl.className = "day";
     dayEl.innerHTML = `
       <div class="dayName">${name}</div>
-      <div class="dayIcon">${icon}</div>
+      <div class="dayIcon">${code != null ? iconWeather(code) : ""}</div>
       <div class="dayTemps">
         <span class="hi">${hi}°</span>
         <span class="lo">${lo}°</span>
@@ -263,176 +44,126 @@ function renderWeek(el, daily) {
   });
 }
 
-/* -------------------- Price formatter -------------------- */
-
-function fmtPrice(p) {
-  if (p == null) return "--";
-  return `$${Number(p).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`;
-}
-
-/* -------------------- Cached render -------------------- */
-
-function tryRenderCached(el) {
+function renderFromCache(el) {
   try {
-    const cachedWeather = JSON.parse(localStorage.getItem(LS_WEATHER));
-    if (cachedWeather?.current) {
-      const { code, temp, hi, lo, text } = cachedWeather.current;
-      el.wxTemp.textContent = `${temp}°`;
-      el.wxDesc.textContent = text;
-      el.wxHi.textContent = `${hi}°`;
-      el.wxLo.textContent = `${lo}°`;
-      if (el.wxIcon) el.wxIcon.innerHTML = iconWeather(code);
+    const w = JSON.parse(localStorage.getItem(LS_WEATHER));
+    if (w?.current) {
+      el.wxTemp.textContent = `${w.current.temp}°`;
+      el.wxDesc.textContent = w.current.text;
+      el.wxHi.textContent = `${w.current.hi}°`;
+      el.wxLo.textContent = `${w.current.lo}°`;
+      el.wxIcon.innerHTML = iconWeather(w.current.code);
     }
-    if (cachedWeather?.daily && el.week) renderWeek(el.week, cachedWeather.daily);
+    if (w?.daily) renderWeek(el.week, w.daily);
   } catch {}
 
   try {
-    const cachedMarkets = JSON.parse(localStorage.getItem(LS_MARKETS));
-    if (cachedMarkets?.symbols) {
-      el.spy.textContent = fmtPrice(cachedMarkets.symbols.SPY?.price);
-      el.iau.textContent = fmtPrice(cachedMarkets.symbols.IAU?.price);
-      el.mktUpdated.textContent = cachedMarkets.updated_hm || "Cached";
+    const m = JSON.parse(localStorage.getItem(LS_MARKETS));
+    if (m?.symbols) {
+      el.spy.textContent = fmtPrice(m.symbols.SPY?.price);
+      el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
+      el.mktUpdated.textContent = m.updated_text || "Cached";
     }
   } catch {}
 }
 
-/* -------------------- Embedded load -------------------- */
-
-function loadFromEmbedded(el) {
+function renderFromEmbedded(el) {
   const w = window.DASH_DATA?.weather;
   const m = window.DASH_DATA?.markets;
 
   if (w?.current) {
-    const curTemp = Math.round(w.current.temperature_2m);
     const code = w.current.weather_code;
-    const hi = Math.round(w.daily?.temperature_2m_max?.[0] ?? 0);
-    const lo = Math.round(w.daily?.temperature_2m_min?.[0] ?? 0);
+    const temp = Math.round(w.current.temperature_2m);
+    const hi = Math.round(w.daily?.temperature_2m_max?.[0] ?? temp);
+    const lo = Math.round(w.daily?.temperature_2m_min?.[0] ?? temp);
 
-    el.wxTemp.textContent = `${curTemp}°`;
+    el.wxIcon.innerHTML = iconWeather(code);
+    el.wxTemp.textContent = `${temp}°`;
     el.wxDesc.textContent = wxText(code);
     el.wxHi.textContent = `${hi}°`;
     el.wxLo.textContent = `${lo}°`;
 
-    if (el.wxIcon) el.wxIcon.innerHTML = iconWeather(code);
     if (w.daily) renderWeek(el.week, w.daily);
 
     localStorage.setItem(LS_WEATHER, JSON.stringify({
-      current:{ code, temp:curTemp, hi, lo, text:wxText(code), updated_iso:w.updated_iso || new Date().toISOString() },
-      daily:w.daily
+      current: { code, temp, hi, lo, text: wxText(code) },
+      daily: w.daily
     }));
   }
 
-  if (m?.symbols?.SPY?.price) {
+  if (m?.symbols?.SPY?.price != null) {
     el.spy.textContent = fmtPrice(m.symbols.SPY.price);
-    el.iau.textContent = fmtPrice(m.symbols.IAU.price);
+    el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
 
-    const updateDisplay =
-      m.updated_local ||
-      (m.updated_iso
-        ? new Date(m.updated_iso).toLocaleTimeString("en-US", {
-            hour12:false,
-            timeZone:CFG.timezone
-          }).slice(0,5)
-        : "--:--");
+    const updated = m.updated_local || (m.updated_iso ? new Date(m.updated_iso).toLocaleString() : "—");
+    const status = (m.in_hours === true) ? " · Market open" : (m.in_hours === false ? " · Market closed" : "");
+    const txt = `Updated ${updated}${status}`;
 
-    const status =
-      m.in_hours !== undefined
-        ? (m.in_hours ? " · Market open" : " · Market closed")
-        : "";
-
-    el.mktUpdated.textContent = `Updated ${updateDisplay}${status}`;
+    el.mktUpdated.textContent = txt;
 
     localStorage.setItem(LS_MARKETS, JSON.stringify({
       ...m,
-      updated_hm:`Updated ${updateDisplay}${status}`
+      updated_text: txt
     }));
   }
-
-  const t = chicagoParts();
-  el.updated.textContent = `Loaded ${t.hour}:${t.minute}`;
 }
 
-/* -------------------- Boot -------------------- */
+function makeCardLink(node, href) {
+  if (!node) return;
+  const go = () => (window.location.href = href);
+  node.addEventListener("click", go);
+  node.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      go();
+    }
+  });
+}
 
 document.addEventListener("DOMContentLoaded", () => {
+  initStageScale();
 
   const el = {
-    greeting: document.getElementById("greeting"),
-    dateLine: document.getElementById("dateLine"),
-    clock: document.getElementById("clock"),
-    themeBtn: document.getElementById("themeToggle"),
+    greeting: $("greeting"),
+    dateLine: $("dateLine"),
+    clock: $("clock"),
+    themeBtn: $("themeToggle"),
 
-    wxIcon: document.getElementById("wxIcon"),
-    wxTemp: document.getElementById("wxTemp"),
-    wxDesc: document.getElementById("wxDesc"),
-    wxHi: document.getElementById("wxHi"),
-    wxLo: document.getElementById("wxLo"),
-    week: document.getElementById("week"),
+    wxIcon: $("wxIcon"),
+    wxTemp: $("wxTemp"),
+    wxDesc: $("wxDesc"),
+    wxHi: $("wxHi"),
+    wxLo: $("wxLo"),
 
-    spy: document.getElementById("spy"),
-    iau: document.getElementById("iau"),
-    mktUpdated: document.getElementById("mktUpdated"),
+    mktIcon: $("mktIcon"),
+    spy: $("spy"),
+    iau: $("iau"),
+    mktUpdated: $("mktUpdated"),
 
-    updated: document.getElementById("updated"),
+    weekIcon: $("weekIcon"),
+    week: $("week"),
 
-    mktIcon: document.getElementById("mktIcon"),
-    weekIcon: document.getElementById("weekIcon")
+    updated: $("updated")
   };
 
-  updateStageScale();
-  window.addEventListener("resize", updateStageScale);
+  initTheme(el.themeBtn);
+  initTopClock({ clockEl: el.clock, dateLineEl: el.dateLine, themeBtn: el.themeBtn });
 
-  applyThemeForTime(chicagoParts(), el.themeBtn);
+  const tp = timeParts();
+  el.greeting.textContent = `${greetingForHour24(tp.hour24)}, ${CFG.name}!`;
 
-  if (el.themeBtn) {
-    el.themeBtn.addEventListener("click", () => {
-      const next = getInvert() ? "normal" : "invert";
-      localStorage.setItem(LS_THEME_OVERRIDE, next);
-      applyThemeForTime(chicagoParts(), el.themeBtn);
-    });
-  }
+  // shared icons
+  el.mktIcon.innerHTML = iconChart();
+  el.weekIcon.innerHTML = iconWeek();
 
-  if (el.mktIcon) el.mktIcon.innerHTML = iconChart();
-  if (el.weekIcon) el.weekIcon.innerHTML = iconWeek();
+  // fast paint: cached → embedded scripts override
+  renderFromCache(el);
+  renderFromEmbedded(el);
 
-  tryRenderCached(el);
-  scheduleMinuteClock(el);
+  // footer loaded time
+  el.updated.textContent = `Loaded ${tp.hour}:${tp.minute}`;
 
-  try { loadFromEmbedded(el); } catch (e) { console.error(e); }
-
-  // ✅ Folder-based routes
-  const weatherCard = document.getElementById("weatherCard");
-  if (weatherCard) {
-    const go = () => { window.location.href = "./weather/"; };
-    weatherCard.addEventListener("click", go);
-    weatherCard.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
-    });
-  }
-
-  const marketsCard = document.getElementById("marketsCard");
-  if (marketsCard) {
-    const go = () => { window.location.href = "./market/"; };
-    marketsCard.addEventListener("click", go);
-    marketsCard.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
-    });
-  }
-
-  setTimeout(() => {
-    if (!window.DASH_DATA?.markets?.symbols?.SPY?.price) {
-      el.spy.textContent = "—";
-      el.iau.textContent = "—";
-      el.mktUpdated.textContent = "API unreachable";
-    }
-    if (!window.DASH_DATA?.weather?.current) {
-      el.wxTemp.textContent = "—";
-      el.wxDesc.textContent = "Weather unavailable";
-      el.week.innerHTML = "<div>No forecast</div>";
-    }
-  }, 8000);
-
+  // routing
+  makeCardLink($("weatherCard"), "./weather/");
+  makeCardLink($("marketsCard"), "./market/");
 });
