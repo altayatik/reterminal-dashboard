@@ -612,17 +612,17 @@ html.invert{
 }
 
 /* =========================================================
-   SenseCraft / e-ink preview: keep 800×480 stage, scale to fit
+   True device mode (reTerminal 800×480)
+   Use: ?device=1 (or ?eink=1)
    ========================================================= */
-html.eink body{
-  display:grid;
-  place-items:center;
-  overflow:hidden;
+html.device body{
+  display:block;      /* no centering tricks */
+  overflow:hidden;    /* device wants exact frame */
 }
 
-html.eink .stage{
-  width:800px;
-  height:480px;
-  transform: scale(var(--stage-scale));
-  transform-origin:center center;
+html.device .stage{
+  width:800px !important;
+  height:480px !important;
+  transform:none !important;
+  margin:0;
 }

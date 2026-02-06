@@ -103,61 +103,43 @@ export function initBack(btn, fallbackHref = "../") {
   });
 }
 
-/* ---------------- E-ink preview scaling ---------------- */
+/* ---------------- Stage scaling ---------------- */
 
-function isEinkPreview() {
+function isDeviceMode() {
   const params = new URLSearchParams(location.search);
-  if (params.get("eink") === "1") return true;
-
-  // SenseCraft preview is embedded (iframe)
-  const embedded = window.self !== window.top;
-  if (!embedded) return false;
-
-  // Additional guard: landscape-ish and not huge
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  const ratio = w / h;
-  return ratio > 1.1 && w < 1400 && h < 900;
+  return params.get("device") === "1" || params.get("eink") === "1";
 }
 
-function setEinkMode(on) {
-  document.documentElement.classList.toggle("eink", on);
-}
-
-function viewportBox() {
-  // visualViewport is usually the *actual visible box* (better for embedded/modals)
-  const vv = window.visualViewport;
-  const w = vv?.width ?? document.documentElement.clientWidth ?? window.innerWidth;
-  const h = vv?.height ?? document.documentElement.clientHeight ?? window.innerHeight;
-  return { w, h };
+function setDeviceMode(on) {
+  document.documentElement.classList.toggle("device", on);
 }
 
 export function updateStageScale() {
   const stage = document.querySelector(".stage");
   if (!stage) return;
 
-  const eink = isEinkPreview();
-  setEinkMode(eink);
+  const device = isDeviceMode();
+  setDeviceMode(device);
 
-  // Mobile/tablet reflow only when NOT eink preview
-  if (window.matchMedia("(max-width: 900px)").matches && !eink) {
+  // True device mode: pixel-perfect 800×480
+  if (device) {
     document.documentElement.style.setProperty("--stage-scale", "1");
     return;
   }
 
-  const { w, h } = viewportBox();
+  // Mobile/tablet: reflow (CSS)
+  if (window.matchMedia("(max-width: 900px)").matches) {
+    document.documentElement.style.setProperty("--stage-scale", "1");
+    return;
+  }
 
-  // In SenseCraft modal, there’s padding + a device frame;
-  // we must be conservative to avoid clipping.
-  const PAD = eink ? 180 : 40;
-
-  const vw = Math.max(100, w - PAD);
-  const vh = Math.max(100, h - PAD);
+  // Desktop: scale stage to fit
+  const PAD = 40;
+  const vw = Math.max(100, window.innerWidth - PAD);
+  const vh = Math.max(100, window.innerHeight - PAD);
 
   const scale = Math.min(vw / 800, vh / 480);
-
-  // In preview, never exceed 1 (don’t upscale)
-  const capped = eink ? Math.min(scale, 1) : Math.min(scale, 2.0);
+  const capped = Math.min(scale, 2.0);
 
   document.documentElement.style.setProperty("--stage-scale", String(capped));
 }
@@ -165,10 +147,4 @@ export function updateStageScale() {
 export function initStageScale() {
   updateStageScale();
   window.addEventListener("resize", updateStageScale);
-
-  // visualViewport changes without resize in many embedded contexts
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", updateStageScale);
-    window.visualViewport.addEventListener("scroll", updateStageScale);
-  }
 }
