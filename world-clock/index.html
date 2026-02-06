@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>World Clock</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+<main class="stage">
+
+  <header class="top">
+    <div>
+      <div class="headline" id="greeting">World Clock</div>
+      <div class="subline" id="dateLine">--</div>
+    </div>
+
+    <div class="topRight">
+      <button class="themeToggle" id="themeToggle" aria-label="Toggle night mode" aria-pressed="false" title="Night mode">
+        <svg class="iconMoon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79z"></path>
+        </svg>
+        <svg class="iconSun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+      </button>
+
+      <div class="clock" id="clock">--:--</div>
+    </div>
+  </header>
+
+  <section class="detail">
+
+    <div class="detailBar">
+      <button class="btn" id="backBtn" type="button">← Back</button>
+
+      <form class="cityForm" id="cityForm">
+        <input class="cityInput" id="cityInput" placeholder="City (e.g., Paris)" autocomplete="off" />
+        <button class="btn" type="submit">Search</button>
+      </form>
+
+      <div class="tiny muted" id="searchStatus">--</div>
+    </div>
+
+    <div class="detailGrid">
+
+      <!-- Custom card (defaults to Chicago, search replaces it) -->
+      <article class="card span2">
+        <div class="cardTitle">
+          <span class="icon" id="wcIcon"></span>
+          <span>Custom</span>
+        </div>
+        <div id="wcCustomHost"></div>
+      </article>
+
+      <!-- Fixed 6 clocks -->
+      <article class="card span2">
+        <div class="cardTitle">
+          <span class="icon" id="wcIcon2"></span>
+          <span>Clocks</span>
+        </div>
+        <div class="wcGrid" id="wcGrid"></div>
+      </article>
+
+    </div>
+
+  </section>
+
+  <footer class="footer">
+    <span class="tiny muted" id="loaded">--</span>
+  </footer>
+
+</main>
+
+<script src="../config.js"></script>
+<script type="module" src="./world-clock-page.js"></script>
+</body>
+</html>

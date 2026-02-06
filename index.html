@@ -24,12 +24,10 @@
         aria-pressed="false"
         title="Night mode">
 
-        <!-- Moon (shown in day mode) -->
         <svg class="iconMoon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79z"></path>
         </svg>
 
-        <!-- Sun (shown in night mode) -->
         <svg class="iconSun" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4"></circle>
           <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
@@ -43,7 +41,7 @@
 
   <section class="grid">
 
-    <!-- current weather -->
+    <!-- weather -->
     <article class="card" id="weatherCard" tabindex="0" role="link" aria-label="Open weather details">
       <div class="cardTitle">
         <span class="icon" id="wxIcon"></span>
@@ -81,14 +79,14 @@
       <div class="tiny muted" id="mktUpdated">--</div>
     </article>
 
-    <!-- week -->
-    <article class="card span2">
+    <!-- world clock (replaces week) -->
+    <article class="card span2" id="worldClockCard" tabindex="0" role="link" aria-label="Open world clock">
       <div class="cardTitle">
-        <span class="icon" id="weekIcon"></span>
-        <span>Next 7 days</span>
+        <span class="icon" id="wcIcon"></span>
+        <span>World Clock</span>
       </div>
 
-      <div class="week" id="week"></div>
+      <div class="wcList" id="wcList"></div>
     </article>
 
   </section>
@@ -99,7 +97,7 @@
 
 </main>
 
-<!-- your data scripts (keep) -->
+<!-- keep your existing data scripts -->
 <script src="https://dashboard-data-api.vercel.app/api/weather"></script>
 <script src="https://dashboard-data-api.vercel.app/api/markets"></script>
 

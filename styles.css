@@ -534,3 +534,79 @@ html.invert{
 @media (min-width: 601px) and (max-width: 900px){
   .week{ grid-template-columns:repeat(4,1fr); }
 }
+
+.wcValue{
+  font-size:18px;
+}
+
+.wcList{
+  display:grid;
+  gap:6px;
+}
+
+.wcGrid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:14px;
+}
+
+.wcBig{
+  font-size:22px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px){
+  .wcGrid{ grid-template-columns: 1fr; }
+}
+
+/* ===========================
+   World Clock
+   =========================== */
+
+.wcList{
+  display:grid;
+  grid-template-columns:repeat(5, 1fr);
+  gap:8px;
+}
+
+.wcTile{
+  border:1px solid var(--light);
+  border-radius:10px;
+  padding:6px 4px;
+  display:grid;
+  gap:6px;
+  justify-items:center;
+}
+
+.wcCity{
+  font-size:12px;
+  font-weight:800;
+  color:var(--muted);
+  text-align:center;
+}
+
+.wcTime{
+  font-size:13px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+  text-align:center;
+}
+
+.wcGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.wcBig{
+  font-variant-numeric:tabular-nums;
+}
+
+/* Mobile: keep it readable */
+@media (max-width: 900px){
+  .wcList{ grid-template-columns:repeat(3, 1fr); }
+  .wcGrid{ grid-template-columns:1fr; }
+}
+@media (min-width: 601px) and (max-width: 900px){
+  .wcList{ grid-template-columns:repeat(4, 1fr); }
+}

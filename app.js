@@ -1,6 +1,7 @@
 import { initStageScale, initTheme, initTopClock, $, CFG, timeParts } from "./shared/core.js";
-import { iconChart, iconWeek, iconWeather } from "./shared/icons.js";
+import { iconChart, iconWeather, iconClock } from "./shared/icons.js";
 import { wxText } from "./shared/weather-utils.js";
+import { HOME_CLOCKS, formatTime12h } from "./shared/world-clock-utils.js";
 
 const LS_WEATHER = "dash_weather_embedded_v1";
 const LS_MARKETS = "dash_markets_embedded_v1";
@@ -17,55 +18,29 @@ function fmtPrice(p) {
   return `$${Number(p).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function renderWeek(el, daily) {
-  if (!daily?.time?.length) {
-    el.innerHTML = "<div>No forecast</div>";
-    return;
+/* ---------------- World clock (main card) ---------------- */
+
+function renderWorldClockStrip(container) {
+  if (!container) return;
+
+  container.innerHTML = HOME_CLOCKS.map(c => `
+    <div class="wcTile">
+      <div class="wcCity">${c.label}</div>
+      <div class="wcTime" data-tz="${c.tz}">--:--</div>
+    </div>
+  `).join("");
+}
+
+function tickWorldClockStrip(container) {
+  if (!container) return;
+  const nodes = container.querySelectorAll("[data-tz]");
+  for (const n of nodes) {
+    const tz = n.getAttribute("data-tz");
+    n.textContent = formatTime12h(tz);
   }
-
-  el.innerHTML = "";
-  daily.time.forEach((dateStr, i) => {
-    const name = new Date(dateStr).toLocaleDateString("en-US", { weekday: "short" });
-    const hi = Math.round(daily.temperature_2m_max[i]);
-    const lo = Math.round(daily.temperature_2m_min[i]);
-    const code = Array.isArray(daily.weather_code) ? daily.weather_code[i] : null;
-
-    const dayEl = document.createElement("div");
-    dayEl.className = "day";
-    dayEl.innerHTML = `
-      <div class="dayName">${name}</div>
-      <div class="dayIcon">${code != null ? iconWeather(code) : ""}</div>
-      <div class="dayTemps">
-        <span class="hi">${hi}°</span>
-        <span class="lo">${lo}°</span>
-      </div>
-    `;
-    el.appendChild(dayEl);
-  });
 }
 
-function renderFromCache(el) {
-  try {
-    const w = JSON.parse(localStorage.getItem(LS_WEATHER));
-    if (w?.current) {
-      el.wxTemp.textContent = `${w.current.temp}°`;
-      el.wxDesc.textContent = w.current.text;
-      el.wxHi.textContent = `${w.current.hi}°`;
-      el.wxLo.textContent = `${w.current.lo}°`;
-      el.wxIcon.innerHTML = iconWeather(w.current.code);
-    }
-    if (w?.daily) renderWeek(el.week, w.daily);
-  } catch {}
-
-  try {
-    const m = JSON.parse(localStorage.getItem(LS_MARKETS));
-    if (m?.symbols) {
-      el.spy.textContent = fmtPrice(m.symbols.SPY?.price);
-      el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
-      el.mktUpdated.textContent = m.updated_text || "Cached";
-    }
-  } catch {}
-}
+/* ---------------- Data from embedded scripts + cache ---------------- */
 
 function renderFromEmbedded(el) {
   const w = window.DASH_DATA?.weather;
@@ -83,11 +58,8 @@ function renderFromEmbedded(el) {
     el.wxHi.textContent = `${hi}°`;
     el.wxLo.textContent = `${lo}°`;
 
-    if (w.daily) renderWeek(el.week, w.daily);
-
     localStorage.setItem(LS_WEATHER, JSON.stringify({
-      current: { code, temp, hi, lo, text: wxText(code) },
-      daily: w.daily
+      current: { code, temp, hi, lo, text: wxText(code) }
     }));
   }
 
@@ -106,6 +78,28 @@ function renderFromEmbedded(el) {
       updated_text: txt
     }));
   }
+}
+
+function renderFromCache(el) {
+  try {
+    const w = JSON.parse(localStorage.getItem(LS_WEATHER));
+    if (w?.current) {
+      el.wxTemp.textContent = `${w.current.temp}°`;
+      el.wxDesc.textContent = w.current.text;
+      el.wxHi.textContent = `${w.current.hi}°`;
+      el.wxLo.textContent = `${w.current.lo}°`;
+      el.wxIcon.innerHTML = iconWeather(w.current.code);
+    }
+  } catch {}
+
+  try {
+    const m = JSON.parse(localStorage.getItem(LS_MARKETS));
+    if (m?.symbols) {
+      el.spy.textContent = fmtPrice(m.symbols.SPY?.price);
+      el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
+      el.mktUpdated.textContent = m.updated_text || "Cached";
+    }
+  } catch {}
 }
 
 function makeCardLink(node, href) {
@@ -140,8 +134,8 @@ document.addEventListener("DOMContentLoaded", () => {
     iau: $("iau"),
     mktUpdated: $("mktUpdated"),
 
-    weekIcon: $("weekIcon"),
-    week: $("week"),
+    wcIcon: $("wcIcon"),
+    wcStrip: $("wcList"),
 
     updated: $("updated")
   };
@@ -152,18 +146,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const tp = timeParts();
   el.greeting.textContent = `${greetingForHour24(tp.hour24)}, ${CFG.name}!`;
 
-  // shared icons
   el.mktIcon.innerHTML = iconChart();
-  el.weekIcon.innerHTML = iconWeek();
+  el.wcIcon.innerHTML = iconClock();
 
-  // fast paint: cached → embedded scripts override
+  // World clock strip (horizontal tiles)
+  renderWorldClockStrip(el.wcStrip);
+  tickWorldClockStrip(el.wcStrip);
+
+  const msToNextMinute = (60 - new Date().getSeconds()) * 1000 + 50;
+  setTimeout(() => {
+    tickWorldClockStrip(el.wcStrip);
+    setInterval(() => tickWorldClockStrip(el.wcStrip), 60 * 1000);
+  }, msToNextMinute);
+
   renderFromCache(el);
   renderFromEmbedded(el);
 
-  // footer loaded time
   el.updated.textContent = `Loaded ${tp.hour}:${tp.minute}`;
 
-  // routing
   makeCardLink($("weatherCard"), "./weather/");
   makeCardLink($("marketsCard"), "./market/");
+  makeCardLink($("worldClockCard"), "./world-clock/");
 });
