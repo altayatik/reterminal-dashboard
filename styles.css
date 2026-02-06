@@ -583,3 +583,27 @@ html.invert{
   .week{ grid-template-columns:repeat(4,1fr); }
   .wcList{ grid-template-columns:repeat(4, 1fr); }
 }
+
+/* =========================================================
+   reTerminal hard mode (800×480 exact)
+   Use URL: /reterminal-dashboard/?rt=1
+   ========================================================= */
+html.rt, html.rt body{
+  width:800px;
+  height:480px;
+  margin:0;
+  padding:0;
+  overflow:hidden;
+}
+
+html.rt body{
+  display:block; /* no centering grid */
+}
+
+html.rt .stage{
+  width:800px !important;
+  height:480px !important;
+  transform:none !important;
+  transform-origin:unset !important;
+  margin:0 !important;
+}
