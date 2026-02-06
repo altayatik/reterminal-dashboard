@@ -1,243 +1,207 @@
-:root {
-  --bg: #fff;
-  --ink: #111;
-  --muted: #555;
-  --light: #e6e6e6;
+:root{
+  --bg:#fff;
+  --ink:#111;
+  --muted:#555;
+  --light:#e6e6e6;
 }
 
-* {
-  box-sizing: border-box;
-}
+*{ box-sizing:border-box; }
 
-/* ────────────────────────────────────────────────
-   HARD RESET + DISABLE SHARED BEHAVIOR
-───────────────────────────────────────────────── */
-
-html, body {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  overflow: hidden !important;
-  background: var(--bg) !important;
-  color: var(--ink) !important;
+html, body{
+  margin:0 !important;
+  padding:0 !important;
+  width:100% !important;
+  height:100% !important;
+  overflow:hidden !important;
+  background:var(--bg) !important;
+  color:var(--ink) !important;
   font-family: system-ui, Segoe UI, Arial, sans-serif !important;
-  -webkit-text-size-adjust: 100% !important;
-  text-size-adjust: 100% !important;
+  -webkit-text-size-adjust:100% !important;
+  text-size-adjust:100% !important;
 }
 
-/* Kill shared scaling variable and centering */
-:root {
-  --stage-scale: 1 !important;
+/* Viewport: always fills whatever SenseCraft/iframe gives us */
+body.eink{
+  background:var(--bg) !important;
 }
 
-body.eink {
-  display: block !important;               /* Kill shared grid / place-items */
-  place-items: unset !important;
-  place-content: unset !important;
-  overflow: hidden !important;
-  background: var(--bg) !important;
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
+/* Centering surface */
+body.eink .einkViewport{
+  position:fixed !important;
+  inset:0 !important;
+  display:grid !important;
+  place-items:center !important;
+  overflow:hidden !important;
+  background:var(--bg) !important;
 }
 
-/* Force viewport & fit to scaled-down size */
-body.eink .einkViewport,
-body.eink .einkFit {
-  width: 600px !important;                 /* ~800 × 0.75 */
-  height: 360px !important;                /* ~480 × 0.75 */
-  max-width: 100% !important;
-  max-height: 100% !important;
-  margin: auto !important;
-  padding: 0 !important;
+/*
+  FIT LAYER:
+  Keep a logical 800x480 canvas, but scale DOWN if preview is smaller.
+  (Never scale up above 1.)
+*/
+body.eink .einkFit{
+  width:800px !important;
+  height:480px !important;
+  transform-origin:center center !important;
+
+  /* scale = min(1, vw/800, vh/480) */
+  transform: scale(min(1, calc(100vw / 800), calc(100vh / 480))) !important;
 }
 
-/* Apply scale only here – less conflict than on body */
-body.eink .einkFit {
-  transform-origin: center center;
-  transform: scale(0.75) !important;
+/* Stage stays 800x480 — no transforms here */
+body.eink .stage{
+  width:800px !important;
+  height:480px !important;
+  margin:0 !important;
+
+  padding:18px;
+  display:grid !important;
+  grid-template-rows:auto 1fr auto !important;
+  gap:14px !important;
+
+  background:var(--bg) !important;
+
+  transform:none !important;
 }
 
-/* Lock stage to original logical size (scale is applied one level up) */
-body.eink .stage {
-  width: 800px !important;
-  height: 480px !important;
-  margin: 0 !important;
-  padding: 18px;
-  display: grid !important;
-  grid-template-rows: auto 1fr auto !important;
-  gap: 14px !important;
-  background: var(--bg) !important;
-
-  /* Explicitly disable shared transform */
-  transform: none !important;
-  transform-origin: unset !important;
-  scale: 1 !important;
+/* ===== Your original styles ===== */
+body.eink .top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  border-bottom:2px solid var(--ink);
+  padding-bottom:8px;
 }
 
-/* Fallback: when preview is very small */
-@media (max-width: 820px), (max-height: 520px) {
-  body.eink .einkViewport,
-  body.eink .einkFit {
-    width: 100% !important;
-    height: 100% !important;
-  }
-  body.eink .einkFit {
-    transform: scale(0.68) !important;     /* even smaller if needed */
-  }
-  body.eink .stage {
-    padding: 12px !important;
-  }
+body.eink .headline{ font-size:28px; font-weight:800; }
+body.eink .subline{ margin-top:4px; font-size:14px; color:var(--muted); }
+
+body.eink .topRight{ display:flex; align-items:center; gap:10px; }
+
+body.eink .clock{
+  font-size:30px;
+  font-weight:800;
+  border:2px solid var(--ink);
+  padding:6px 12px;
+  border-radius:999px;
+  font-variant-numeric:tabular-nums;
 }
 
-/* ────────────────────────────────────────────────
-   YOUR ORIGINAL STYLES – UNCHANGED BELOW
-───────────────────────────────────────────────── */
-
-body.eink .top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  border-bottom: 2px solid var(--ink);
-  padding-bottom: 8px;
+body.eink .themeToggle{
+  background:none;
+  border:2px solid var(--ink);
+  color:var(--ink);
+  width:34px;
+  height:34px;
+  border-radius:999px;
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+  padding:0;
 }
 
-body.eink .headline { font-size: 28px; font-weight: 800; }
-body.eink .subline { margin-top: 4px; font-size: 14px; color: var(--muted); }
-
-body.eink .topRight { display: flex; align-items: center; gap: 10px; }
-
-body.eink .clock {
-  font-size: 30px;
-  font-weight: 800;
-  border: 2px solid var(--ink);
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-variant-numeric: tabular-nums;
+body.eink .themeToggle svg{
+  width:18px; height:18px;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
 }
 
-/* Theme Toggle */
-body.eink .themeToggle {
-  background: none;
-  border: 2px solid var(--ink);
-  color: var(--ink);
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  padding: 0;
+body.eink .themeToggle .iconSun{ display:none; }
+html.invert body.eink .themeToggle .iconMoon{ display:none; }
+html.invert body.eink .themeToggle .iconSun{ display:block; }
+
+body.eink .grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
 }
 
-body.eink .themeToggle svg {
-  width: 18px; height: 18px;
-  display: block;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+body.eink .card{
+  border:2px solid var(--ink);
+  border-radius:14px;
+  padding:12px;
+  display:grid;
+  gap:10px;
 }
 
-body.eink .themeToggle .iconSun { display: none; }
-html.invert body.eink .themeToggle .iconMoon { display: none; }
-html.invert body.eink .themeToggle .iconSun { display: block; }
+body.eink .span2{ grid-column: span 2; }
 
-/* Grid & Cards */
-body.eink .grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+body.eink .cardTitle{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.4px;
+  text-transform:uppercase;
 }
 
-body.eink .card {
-  border: 2px solid var(--ink);
-  border-radius: 14px;
-  padding: 12px;
-  display: grid;
-  gap: 10px;
+body.eink .icon{ width:22px; height:22px; display:grid; place-items:center; }
+body.eink .icon svg{ width:100%; height:100%; display:block; }
+
+body.eink .wxMain{ display:flex; justify-content:space-between; align-items:baseline; }
+body.eink .wxTemp{ font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; }
+body.eink .wxDesc{ font-size:16px; font-weight:700; text-align:right; }
+
+body.eink .wxMeta{ display:flex; gap:18px; font-size:16px; }
+body.eink .k{ color:var(--muted); }
+body.eink .v{ font-weight:800; }
+
+body.eink .row{
+  display:flex;
+  justify-content:space-between;
+  border-top:1px solid var(--light);
+  padding:6px 0;
+}
+body.eink .row:first-of-type{ border-top:none; }
+
+body.eink .label{ color:var(--muted); font-weight:800; }
+body.eink .value{ font-weight:900; font-size:22px; font-variant-numeric:tabular-nums; }
+
+body.eink .wcList{
+  display:grid;
+  grid-template-columns:repeat(5, 1fr);
+  gap:8px;
 }
 
-body.eink .span2 { grid-column: span 2; }
-
-body.eink .cardTitle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: .4px;
-  text-transform: uppercase;
+body.eink .wcTile{
+  border:1px solid var(--light);
+  border-radius:10px;
+  padding:8px 6px;
+  display:grid;
+  gap:6px;
+  justify-items:center;
 }
 
-body.eink .icon { width: 22px; height: 22px; display: grid; place-items: center; }
-body.eink .icon svg { width: 100%; height: 100%; display: block; }
-
-/* Weather */
-body.eink .wxMain { display: flex; justify-content: space-between; align-items: baseline; }
-body.eink .wxTemp { font-size: 52px; font-weight: 900; font-variant-numeric: tabular-nums; }
-body.eink .wxDesc { font-size: 16px; font-weight: 700; text-align: right; }
-
-body.eink .wxMeta { display: flex; gap: 18px; font-size: 16px; }
-body.eink .k { color: var(--muted); }
-body.eink .v { font-weight: 800; }
-
-/* Markets */
-body.eink .row {
-  display: flex;
-  justify-content: space-between;
-  border-top: 1px solid var(--light);
-  padding: 6px 0;
-}
-body.eink .row:first-of-type { border-top: none; }
-
-body.eink .label { color: var(--muted); font-weight: 800; }
-body.eink .value { font-weight: 900; font-size: 22px; font-variant-numeric: tabular-nums; }
-
-/* World clock */
-body.eink .wcList {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
+body.eink .wcCity{
+  font-size:12px;
+  font-weight:900;
+  color:var(--muted);
 }
 
-body.eink .wcTile {
-  border: 1px solid var(--light);
-  border-radius: 10px;
-  padding: 8px 6px;
-  display: grid;
-  gap: 6px;
-  justify-items: center;
+body.eink .wcTime{
+  font-size:16px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
 }
 
-body.eink .wcCity {
-  font-size: 12px;
-  font-weight: 900;
-  color: var(--muted);
+body.eink .footer{
+  border-top:2px solid var(--ink);
+  padding-top:6px;
+  display:flex;
+  justify-content:flex-end;
 }
+body.eink .tiny{ font-size:11px; }
+body.eink .muted{ color:var(--muted); }
 
-body.eink .wcTime {
-  font-size: 16px;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Footer */
-body.eink .footer {
-  border-top: 2px solid var(--ink);
-  padding-top: 6px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-body.eink .tiny { font-size: 11px; }
-body.eink .muted { color: var(--muted); }
-
-/* Night mode */
-html.invert {
-  --bg: #000;
-  --ink: #fff;
-  --muted: #bbb;
-  --light: #444;
+html.invert{
+  --bg:#000;
+  --ink:#fff;
+  --muted:#bbb;
+  --light:#444;
 }
