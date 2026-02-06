@@ -1,0 +1,13 @@
+body.eink {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+body.eink .stage {
+  width: 800px;
+  height: 480px;
+  padding: 18px;
+
+  transform: none !important;
+}

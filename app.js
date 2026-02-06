@@ -1,4 +1,12 @@
-import { initStageScale, initTheme, initTopClock, $, CFG, timeParts } from "./shared/core.js";
+import {
+  initStageScale,
+  initTheme,
+  initTopClock,
+  $,
+  CFG,
+  timeParts
+} from "./shared/core.js";
+
 import { iconChart, iconWeather, iconClock } from "./shared/icons.js";
 import { wxText } from "./shared/weather-utils.js";
 import { HOME_CLOCKS, formatTime12h } from "./shared/world-clock-utils.js";
@@ -15,7 +23,10 @@ function greetingForHour24(h) {
 
 function fmtPrice(p) {
   if (p == null || !Number.isFinite(Number(p))) return "--";
-  return `$${Number(p).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${Number(p).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
 }
 
 /* ---------------- World clock (main card) ---------------- */
@@ -23,7 +34,7 @@ function fmtPrice(p) {
 function renderWorldClockStrip(container) {
   if (!container) return;
 
-  container.innerHTML = HOME_CLOCKS.map(c => `
+  container.innerHTML = HOME_CLOCKS.map((c) => `
     <div class="wcTile">
       <div class="wcCity">${c.label}</div>
       <div class="wcTime" data-tz="${c.tz}">--:--</div>
@@ -52,31 +63,45 @@ function renderFromEmbedded(el) {
     const hi = Math.round(w.daily?.temperature_2m_max?.[0] ?? temp);
     const lo = Math.round(w.daily?.temperature_2m_min?.[0] ?? temp);
 
-    el.wxIcon.innerHTML = iconWeather(code);
-    el.wxTemp.textContent = `${temp}°`;
-    el.wxDesc.textContent = wxText(code);
-    el.wxHi.textContent = `${hi}°`;
-    el.wxLo.textContent = `${lo}°`;
+    if (el.wxIcon) el.wxIcon.innerHTML = iconWeather(code);
+    if (el.wxTemp) el.wxTemp.textContent = `${temp}°`;
+    if (el.wxDesc) el.wxDesc.textContent = wxText(code);
+    if (el.wxHi) el.wxHi.textContent = `${hi}°`;
+    if (el.wxLo) el.wxLo.textContent = `${lo}°`;
 
-    localStorage.setItem(LS_WEATHER, JSON.stringify({
-      current: { code, temp, hi, lo, text: wxText(code) }
-    }));
+    localStorage.setItem(
+      LS_WEATHER,
+      JSON.stringify({
+        current: { code, temp, hi, lo, text: wxText(code) }
+      })
+    );
   }
 
   if (m?.symbols?.SPY?.price != null) {
-    el.spy.textContent = fmtPrice(m.symbols.SPY.price);
-    el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
+    if (el.spy) el.spy.textContent = fmtPrice(m.symbols.SPY.price);
+    if (el.iau) el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
 
-    const updated = m.updated_local || (m.updated_iso ? new Date(m.updated_iso).toLocaleString() : "—");
-    const status = (m.in_hours === true) ? " · Market open" : (m.in_hours === false ? " · Market closed" : "");
+    const updated =
+      m.updated_local ||
+      (m.updated_iso ? new Date(m.updated_iso).toLocaleString() : "—");
+
+    const status =
+      m.in_hours === true
+        ? " · Market open"
+        : m.in_hours === false
+          ? " · Market closed"
+          : "";
+
     const txt = `Updated ${updated}${status}`;
+    if (el.mktUpdated) el.mktUpdated.textContent = txt;
 
-    el.mktUpdated.textContent = txt;
-
-    localStorage.setItem(LS_MARKETS, JSON.stringify({
-      ...m,
-      updated_text: txt
-    }));
+    localStorage.setItem(
+      LS_MARKETS,
+      JSON.stringify({
+        ...m,
+        updated_text: txt
+      })
+    );
   }
 }
 
@@ -84,20 +109,20 @@ function renderFromCache(el) {
   try {
     const w = JSON.parse(localStorage.getItem(LS_WEATHER));
     if (w?.current) {
-      el.wxTemp.textContent = `${w.current.temp}°`;
-      el.wxDesc.textContent = w.current.text;
-      el.wxHi.textContent = `${w.current.hi}°`;
-      el.wxLo.textContent = `${w.current.lo}°`;
-      el.wxIcon.innerHTML = iconWeather(w.current.code);
+      if (el.wxTemp) el.wxTemp.textContent = `${w.current.temp}°`;
+      if (el.wxDesc) el.wxDesc.textContent = w.current.text;
+      if (el.wxHi) el.wxHi.textContent = `${w.current.hi}°`;
+      if (el.wxLo) el.wxLo.textContent = `${w.current.lo}°`;
+      if (el.wxIcon) el.wxIcon.innerHTML = iconWeather(w.current.code);
     }
   } catch {}
 
   try {
     const m = JSON.parse(localStorage.getItem(LS_MARKETS));
     if (m?.symbols) {
-      el.spy.textContent = fmtPrice(m.symbols.SPY?.price);
-      el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
-      el.mktUpdated.textContent = m.updated_text || "Cached";
+      if (el.spy) el.spy.textContent = fmtPrice(m.symbols.SPY?.price);
+      if (el.iau) el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
+      if (el.mktUpdated) el.mktUpdated.textContent = m.updated_text || "Cached";
     }
   } catch {}
 }
@@ -105,6 +130,7 @@ function renderFromCache(el) {
 function makeCardLink(node, href) {
   if (!node) return;
   const go = () => (window.location.href = href);
+
   node.addEventListener("click", go);
   node.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -115,7 +141,13 @@ function makeCardLink(node, href) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  initStageScale();
+  // ✅ Detect the fixed 800x480 e-ink route via body class
+  const isEink = document.body.classList.contains("eink");
+
+  // ✅ Only scale on non-eink routes
+  if (!isEink) {
+    initStageScale();
+  }
 
   const el = {
     greeting: $("greeting"),
@@ -144,15 +176,18 @@ document.addEventListener("DOMContentLoaded", () => {
   initTopClock({ clockEl: el.clock, dateLineEl: el.dateLine, themeBtn: el.themeBtn });
 
   const tp = timeParts();
-  el.greeting.textContent = `${greetingForHour24(tp.hour24)}, ${CFG.name}!`;
+  if (el.greeting) {
+    el.greeting.textContent = `${greetingForHour24(tp.hour24)}, ${CFG.name}!`;
+  }
 
-  el.mktIcon.innerHTML = iconChart();
-  el.wcIcon.innerHTML = iconClock();
+  if (el.mktIcon) el.mktIcon.innerHTML = iconChart();
+  if (el.wcIcon) el.wcIcon.innerHTML = iconClock();
 
   // World clock strip (horizontal tiles)
   renderWorldClockStrip(el.wcStrip);
   tickWorldClockStrip(el.wcStrip);
 
+  // Align ticks to the next minute boundary
   const msToNextMinute = (60 - new Date().getSeconds()) * 1000 + 50;
   setTimeout(() => {
     tickWorldClockStrip(el.wcStrip);
@@ -162,9 +197,14 @@ document.addEventListener("DOMContentLoaded", () => {
   renderFromCache(el);
   renderFromEmbedded(el);
 
-  el.updated.textContent = `Loaded ${tp.hour}:${tp.minute}`;
+  if (el.updated) {
+    el.updated.textContent = `Loaded ${tp.hour}:${tp.minute}`;
+  }
 
-  makeCardLink($("weatherCard"), "./weather/");
-  makeCardLink($("marketsCard"), "./market/");
-  makeCardLink($("worldClockCard"), "./world-clock/");
+  // ✅ Links must be different when running under /e-ink/
+  const base = isEink ? "../" : "./";
+
+  makeCardLink($("weatherCard"), `${base}weather/`);
+  makeCardLink($("marketsCard"), `${base}market/`);
+  makeCardLink($("worldClockCard"), `${base}world-clock/`);
 });
