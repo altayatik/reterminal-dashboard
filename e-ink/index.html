@@ -2,108 +2,102 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <!-- E-ink: fixed canvas (800x480). Avoid responsive/device-width scaling -->
+  <!-- Fixed canvas; OK for device. Preview may still scale the iframe, so we also fit in CSS. -->
   <meta name="viewport" content="width=800, height=480, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>E-Ink Dashboard</title>
 
-  <!-- load shared styles first -->
   <link rel="stylesheet" href="../styles.css" />
-  <!-- then override with e-ink lock -->
   <link rel="stylesheet" href="./e-ink.css" />
 </head>
 
 <body class="eink">
-  <div class="einkCenter">
-    <main class="stage">
+  <div class="einkViewport">
+    <div class="einkFit">
+      <main class="stage">
 
-      <header class="top">
-        <div>
-          <div class="headline" id="greeting">Hello</div>
-          <div class="subline" id="dateLine">--</div>
-        </div>
-
-        <div class="topRight">
-          <button
-            class="themeToggle"
-            id="themeToggle"
-            aria-label="Toggle night mode"
-            aria-pressed="false"
-            title="Night mode">
-
-            <svg class="iconMoon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79z"></path>
-            </svg>
-
-            <svg class="iconSun" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="4"></circle>
-              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
-            </svg>
-          </button>
-
-          <div class="clock" id="clock">--:--</div>
-        </div>
-      </header>
-
-      <section class="grid">
-
-        <!-- weather -->
-        <article class="card" id="weatherCard" tabindex="0" role="link" aria-label="Open weather details">
-          <div class="cardTitle">
-            <span class="icon" id="wxIcon"></span>
-            <span>Weather</span>
+        <header class="top">
+          <div>
+            <div class="headline" id="greeting">Hello</div>
+            <div class="subline" id="dateLine">--</div>
           </div>
 
-          <div class="wxMain">
-            <div class="wxTemp" id="wxTemp">--°</div>
-            <div class="wxDesc" id="wxDesc">--</div>
+          <div class="topRight">
+            <button
+              class="themeToggle"
+              id="themeToggle"
+              aria-label="Toggle night mode"
+              aria-pressed="false"
+              title="Night mode">
+
+              <svg class="iconMoon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79z"></path>
+              </svg>
+
+              <svg class="iconSun" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+              </svg>
+            </button>
+
+            <div class="clock" id="clock">--:--</div>
           </div>
+        </header>
 
-          <div class="wxMeta">
-            <div><span class="k">Hi</span> <span class="v" id="wxHi">--°</span></div>
-            <div><span class="k">Lo</span> <span class="v" id="wxLo">--°</span></div>
-          </div>
-        </article>
+        <section class="grid">
+          <article class="card" id="weatherCard" tabindex="0" role="link" aria-label="Open weather details">
+            <div class="cardTitle">
+              <span class="icon" id="wxIcon"></span>
+              <span>Weather</span>
+            </div>
 
-        <!-- markets -->
-        <article class="card" id="marketsCard" tabindex="0" role="link" aria-label="Open market details">
-          <div class="cardTitle">
-            <span class="icon" id="mktIcon"></span>
-            <span>Markets</span>
-          </div>
+            <div class="wxMain">
+              <div class="wxTemp" id="wxTemp">--°</div>
+              <div class="wxDesc" id="wxDesc">--</div>
+            </div>
 
-          <div class="row">
-            <div class="label">SPY</div>
-            <div class="value" id="spy">--</div>
-          </div>
+            <div class="wxMeta">
+              <div><span class="k">Hi</span> <span class="v" id="wxHi">--°</span></div>
+              <div><span class="k">Lo</span> <span class="v" id="wxLo">--°</span></div>
+            </div>
+          </article>
 
-          <div class="row">
-            <div class="label">IAU</div>
-            <div class="value" id="iau">--</div>
-          </div>
+          <article class="card" id="marketsCard" tabindex="0" role="link" aria-label="Open market details">
+            <div class="cardTitle">
+              <span class="icon" id="mktIcon"></span>
+              <span>Markets</span>
+            </div>
 
-          <div class="tiny muted" id="mktUpdated">--</div>
-        </article>
+            <div class="row">
+              <div class="label">SPY</div>
+              <div class="value" id="spy">--</div>
+            </div>
 
-        <!-- world clock -->
-        <article class="card span2" id="worldClockCard" tabindex="0" role="link" aria-label="Open world clock">
-          <div class="cardTitle">
-            <span class="icon" id="wcIcon"></span>
-            <span>World Clock</span>
-          </div>
+            <div class="row">
+              <div class="label">IAU</div>
+              <div class="value" id="iau">--</div>
+            </div>
 
-          <div class="wcList" id="wcList"></div>
-        </article>
+            <div class="tiny muted" id="mktUpdated">--</div>
+          </article>
 
-      </section>
+          <article class="card span2" id="worldClockCard" tabindex="0" role="link" aria-label="Open world clock">
+            <div class="cardTitle">
+              <span class="icon" id="wcIcon"></span>
+              <span>World Clock</span>
+            </div>
 
-      <footer class="footer">
-        <span class="tiny muted" id="updated">--</span>
-      </footer>
+            <div class="wcList" id="wcList"></div>
+          </article>
+        </section>
 
-    </main>
+        <footer class="footer">
+          <span class="tiny muted" id="updated">--</span>
+        </footer>
+
+      </main>
+    </div>
   </div>
 
-  <!-- data scripts -->
   <script src="https://dashboard-data-api.vercel.app/api/weather"></script>
   <script src="https://dashboard-data-api.vercel.app/api/markets"></script>
 

@@ -1,5 +1,3 @@
-/* e-ink.css — fixed 800x480, iframe/preview-safe centering */
-
 :root{
   --bg:#fff;
   --ink:#111;
@@ -9,47 +7,48 @@
 
 *{ box-sizing:border-box; }
 
-/* Hard reset to beat shared styles */
+/* hard reset */
 html, body{
   margin:0 !important;
   padding:0 !important;
   width:100% !important;
   height:100% !important;
   overflow:hidden !important;
-
-  background: var(--bg) !important;
-  color: var(--ink) !important;
+  background:var(--bg) !important;
+  color:var(--ink) !important;
   font-family: system-ui, Segoe UI, Arial, sans-serif !important;
-
-  /* avoid “mobile-ish” text scaling behaviors */
-  -webkit-text-size-adjust: 100% !important;
-  text-size-adjust: 100% !important;
+  -webkit-text-size-adjust:100% !important;
+  text-size-adjust:100% !important;
 }
 
-/* If the host applies scaling, don’t add your own transforms */
-body.eink{
-  background: var(--bg) !important;
+/* Full-bleed viewport area we can center inside */
+body.eink .einkViewport{
+  position:fixed !important;
+  inset:0 !important;
+  display:grid !important;
+  place-items:center !important;
+  overflow:hidden !important;
+  background:var(--bg) !important;
 }
 
-/* Centering surface (works even inside weird iframe containers) */
-body.eink .einkCenter{
-  position: fixed !important;
-  inset: 0 !important;
+/*
+  FIT LAYER:
+  Keep design in 800x480 coordinates, but scale down to whatever size the host gives us.
+  The key is: scale DOWN only (never enlarge).
+*/
+body.eink .einkFit{
+  width:800px;
+  height:480px;
+  transform-origin:center center;
 
-  display: grid !important;
-  place-items: center !important;
-
-  overflow: hidden !important;
-  background: var(--bg) !important;
-
-  transform: none !important;
-  transform-origin: 50% 50% !important;
+  /* scale factor = min(1, vw/800, vh/480) */
+  transform: scale(min(1, calc(100vw / 800), calc(100vh / 480)));
 }
 
-/* The actual canvas */
+/* Fixed stage */
 body.eink .stage{
-  width:800px !important;
-  height:480px !important;
+  width:800px;
+  height:480px;
   margin:0 !important;
 
   padding:18px;
@@ -57,10 +56,7 @@ body.eink .stage{
   grid-template-rows:auto 1fr auto;
   gap:14px;
 
-  background: var(--bg);
-
-  transform: none !important;
-  transform-origin: 50% 50% !important;
+  background:var(--bg);
 }
 
 /* ===== Header ===== */
@@ -110,9 +106,7 @@ body.eink .themeToggle svg{
   stroke-linejoin:round;
 }
 
-/* day -> show moon */
 body.eink .themeToggle .iconSun{ display:none; }
-/* night -> show sun */
 html.invert body.eink .themeToggle .iconMoon{ display:none; }
 html.invert body.eink .themeToggle .iconSun{ display:block; }
 
@@ -146,7 +140,7 @@ body.eink .cardTitle{
 body.eink .icon{ width:22px; height:22px; display:grid; place-items:center; }
 body.eink .icon svg{ width:100%; height:100%; display:block; }
 
-/* ===== Weather ===== */
+/* Weather */
 body.eink .wxMain{ display:flex; justify-content:space-between; align-items:baseline; }
 body.eink .wxTemp{ font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; }
 body.eink .wxDesc{ font-size:16px; font-weight:700; text-align:right; }
@@ -155,7 +149,7 @@ body.eink .wxMeta{ display:flex; gap:18px; font-size:16px; }
 body.eink .k{ color:var(--muted); }
 body.eink .v{ font-weight:800; }
 
-/* ===== Markets ===== */
+/* Markets */
 body.eink .row{
   display:flex;
   justify-content:space-between;
@@ -167,7 +161,7 @@ body.eink .row:first-of-type{ border-top:none; }
 body.eink .label{ color:var(--muted); font-weight:800; }
 body.eink .value{ font-weight:900; font-size:22px; font-variant-numeric:tabular-nums; }
 
-/* ===== World clock ===== */
+/* World clock */
 body.eink .wcList{
   display:grid;
   grid-template-columns:repeat(5, 1fr);
@@ -195,7 +189,7 @@ body.eink .wcTime{
   font-variant-numeric:tabular-nums;
 }
 
-/* ===== Footer ===== */
+/* Footer */
 body.eink .footer{
   border-top:2px solid var(--ink);
   padding-top:6px;
@@ -205,7 +199,7 @@ body.eink .footer{
 body.eink .tiny{ font-size:11px; }
 body.eink .muted{ color:var(--muted); }
 
-/* ===== Night mode ===== */
+/* Night mode */
 html.invert{
   --bg:#000;
   --ink:#fff;
