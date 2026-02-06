@@ -108,7 +108,6 @@ function isReTerminalMode() {
   return params.get("rt") === "1";
 }
 
-/* ✅ NEW: detect the /e-ink route by body class */
 function isEinkRoute() {
   return document.body?.classList?.contains("eink") === true;
 }
@@ -117,7 +116,7 @@ export function updateStageScale() {
   const stage = document.querySelector(".stage");
   if (!stage) return;
 
-  /* ✅ NEW: never stage-scale on e-ink */
+  // ✅ e-ink route: never scale stage
   if (isEinkRoute()) {
     document.documentElement.classList.remove("rt");
     document.documentElement.style.setProperty("--stage-scale", "1");
@@ -127,19 +126,16 @@ export function updateStageScale() {
   const rt = isReTerminalMode();
   document.documentElement.classList.toggle("rt", rt);
 
-  // reTerminal: true 800x480, absolutely no scaling
   if (rt) {
     document.documentElement.style.setProperty("--stage-scale", "1");
     return;
   }
 
-  // Mobile/tablet: reflow via CSS
   if (window.matchMedia("(max-width: 900px)").matches) {
     document.documentElement.style.setProperty("--stage-scale", "1");
     return;
   }
 
-  // Desktop: scale stage to fit viewport
   const PAD = 40;
   const vw = Math.max(100, window.innerWidth - PAD);
   const vh = Math.max(100, window.innerHeight - PAD);

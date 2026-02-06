@@ -29,23 +29,24 @@ function fmtPrice(p) {
   })}`;
 }
 
-/* ---------------- E-ink fit (fix preview zoom/crop) ---------------- */
-
+/* --- E-ink preview fit (inline transform beats host CSS) --- */
 function applyEinkFit() {
   const fit = document.querySelector(".einkFit");
   if (!fit) return;
 
-  // Use real runtime viewport (iframe-safe)
-  const vw = window.innerWidth || document.documentElement.clientWidth || 800;
-  const vh = window.innerHeight || document.documentElement.clientHeight || 480;
+  const vv = window.visualViewport;
+  const vw = (vv?.width ?? window.innerWidth ?? document.documentElement.clientWidth ?? 800);
+  const vh = (vv?.height ?? window.innerHeight ?? document.documentElement.clientHeight ?? 480);
 
-  // Scale DOWN only; never enlarge above 1
+  // scale DOWN only
   const scale = Math.min(1, vw / 800, vh / 480);
 
-  document.documentElement.style.setProperty("--eink-scale", String(scale));
+  // strongest possible application
+  fit.style.transformOrigin = "center center";
+  fit.style.transform = `scale(${scale})`;
 }
 
-/* ---------------- World clock (main card) ---------------- */
+/* ---------------- World clock ---------------- */
 
 function renderWorldClockStrip(container) {
   if (!container) return;
@@ -87,9 +88,7 @@ function renderFromEmbedded(el) {
 
     localStorage.setItem(
       LS_WEATHER,
-      JSON.stringify({
-        current: { code, temp, hi, lo, text: wxText(code) }
-      })
+      JSON.stringify({ current: { code, temp, hi, lo, text: wxText(code) } })
     );
   }
 
@@ -111,13 +110,7 @@ function renderFromEmbedded(el) {
     const txt = `Updated ${updated}${status}`;
     if (el.mktUpdated) el.mktUpdated.textContent = txt;
 
-    localStorage.setItem(
-      LS_MARKETS,
-      JSON.stringify({
-        ...m,
-        updated_text: txt
-      })
-    );
+    localStorage.setItem(LS_MARKETS, JSON.stringify({ ...m, updated_text: txt }));
   }
 }
 
@@ -162,11 +155,13 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!isEink) {
     initStageScale();
   } else {
-    // Deterministic fit inside SenseCraft preview / iframes
     applyEinkFit();
-    window.addEventListener("resize", applyEinkFit, { passive: true });
 
-    // Some hosts update size after initial paint; do a couple of delayed fits
+    // resize + visualViewport changes (SenseCraft-like embeds)
+    window.addEventListener("resize", applyEinkFit, { passive: true });
+    window.visualViewport?.addEventListener("resize", applyEinkFit, { passive: true });
+
+    // hosts sometimes resize after first paint
     setTimeout(applyEinkFit, 0);
     setTimeout(applyEinkFit, 150);
     setTimeout(applyEinkFit, 500);

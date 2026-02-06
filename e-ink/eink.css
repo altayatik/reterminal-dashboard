@@ -4,13 +4,12 @@
   --muted:#555;
   --light:#e6e6e6;
 
-  /* JS sets this; default 1 */
-  --eink-scale: 1;
+  /* kill shared scaler */
+  --stage-scale: 1 !important;
 }
 
 *{ box-sizing:border-box; }
 
-/* Hard reset to beat shared styles */
 html, body{
   margin:0 !important;
   padding:0 !important;
@@ -24,11 +23,7 @@ html, body{
   text-size-adjust:100% !important;
 }
 
-/* Viewport overlay: always fill host iframe/modal */
-body.eink{
-  background:var(--bg) !important;
-}
-
+/* Centering surface */
 body.eink .einkViewport{
   position:fixed !important;
   inset:0 !important;
@@ -38,31 +33,34 @@ body.eink .einkViewport{
   background:var(--bg) !important;
 }
 
-/* Scale ONLY this wrapper (JS computes exact fit) */
+/* This element gets inline transform from JS (strongest) */
 body.eink .einkFit{
   width:800px !important;
   height:480px !important;
   transform-origin:center center !important;
-  transform: scale(var(--eink-scale)) !important;
 }
 
-/* Stage is always logical 800x480, no transform */
+/* Stage: hard-disable any transform/zoom coming from shared CSS */
 body.eink .stage{
   width:800px !important;
   height:480px !important;
   margin:0 !important;
-
   padding:18px;
+
   display:grid !important;
   grid-template-rows:auto 1fr auto !important;
   gap:14px !important;
 
   background:var(--bg) !important;
 
+  /* 🔥 absolute kill switch */
   transform:none !important;
+  zoom:1 !important;
+  scale:1 !important;
+  transform-origin:center center !important;
 }
 
-/* ===== Your component styles ===== */
+/* ===== your original styles ===== */
 body.eink .top{
   display:flex;
   justify-content:space-between;
