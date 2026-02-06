@@ -18,20 +18,14 @@ html, body{
   text-size-adjust:100%;
 }
 
-/* --------------------------------
-   Center the fixed canvas
--------------------------------- */
-
+/* Center the fixed canvas */
 body.eink{
   display:flex;
   align-items:center;
   justify-content:center;
 }
 
-/* --------------------------------
-   Fixed 800x480 stage
--------------------------------- */
-
+/* Fixed 800x480 stage */
 body.eink .stage{
   width:800px;
   height:480px;
@@ -43,9 +37,8 @@ body.eink .stage{
 }
 
 /* --------------------------------
-   Header
+   Header (base styles)
 -------------------------------- */
-
 body.eink .top{
   display:flex;
   justify-content:space-between;
@@ -54,8 +47,16 @@ body.eink .top{
   padding-bottom:8px;
 }
 
-body.eink .headline{ font-size:28px; font-weight:800; }
-body.eink .subline{ margin-top:4px; font-size:14px; color:var(--muted); }
+body.eink .headline{
+  font-size:28px;
+  font-weight:800;
+}
+
+body.eink .subline{
+  margin-top:4px;
+  font-size:14px;
+  color:var(--muted);
+}
 
 body.eink .topRight{
   display:flex;
@@ -73,7 +74,6 @@ body.eink .clock{
 }
 
 /* Theme toggle */
-
 body.eink .themeToggle{
   background:none;
   border:2px solid var(--ink);
@@ -106,7 +106,6 @@ html.invert body.eink .themeToggle .iconSun{ display:block; }
 /* --------------------------------
    Grid & cards
 -------------------------------- */
-
 body.eink .grid{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -133,78 +132,31 @@ body.eink .cardTitle{
   text-transform:uppercase;
 }
 
-body.eink .icon{
-  width:22px;
-  height:22px;
-  display:grid;
-  place-items:center;
-}
+body.eink .icon{ width:22px; height:22px; display:grid; place-items:center; }
+body.eink .icon svg{ width:100%; height:100%; display:block; }
 
-body.eink .icon svg{
-  width:100%;
-  height:100%;
-  display:block;
-}
+/* Weather */
+body.eink .wxMain{ display:flex; justify-content:space-between; align-items:baseline; }
+body.eink .wxTemp{ font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; }
+body.eink .wxDesc{ font-size:16px; font-weight:700; text-align:right; }
 
-/* --------------------------------
-   Weather
--------------------------------- */
-
-body.eink .wxMain{
-  display:flex;
-  justify-content:space-between;
-  align-items:baseline;
-}
-
-body.eink .wxTemp{
-  font-size:52px;
-  font-weight:900;
-  font-variant-numeric:tabular-nums;
-}
-
-body.eink .wxDesc{
-  font-size:16px;
-  font-weight:700;
-  text-align:right;
-}
-
-body.eink .wxMeta{
-  display:flex;
-  gap:18px;
-  font-size:16px;
-}
-
+body.eink .wxMeta{ display:flex; gap:18px; font-size:16px; }
 body.eink .k{ color:var(--muted); }
 body.eink .v{ font-weight:800; }
 
-/* --------------------------------
-   Markets
--------------------------------- */
-
+/* Markets */
 body.eink .row{
   display:flex;
   justify-content:space-between;
   border-top:1px solid var(--light);
   padding:6px 0;
 }
-
 body.eink .row:first-of-type{ border-top:none; }
 
-body.eink .label{
-  color:var(--muted);
-  font-weight:800;
-}
+body.eink .label{ color:var(--muted); font-weight:800; }
+body.eink .value{ font-weight:900; font-size:22px; font-variant-numeric:tabular-nums; }
 
-body.eink .value{
-  font-weight:900;
-  font-size:22px;
-  font-variant-numeric:tabular-nums;
-}
-
-/* --------------------------------
-   World clock
--------------------------------- */
-
+/* World clock */
 body.eink .wcList{
   display:grid;
   grid-template-columns:repeat(5, 1fr);
@@ -232,24 +184,17 @@ body.eink .wcTime{
   font-variant-numeric:tabular-nums;
 }
 
-/* --------------------------------
-   Footer
--------------------------------- */
-
+/* Footer */
 body.eink .footer{
   border-top:2px solid var(--ink);
   padding-top:6px;
   display:flex;
   justify-content:flex-end;
 }
-
 body.eink .tiny{ font-size:11px; }
 body.eink .muted{ color:var(--muted); }
 
-/* --------------------------------
-   Night mode
--------------------------------- */
-
+/* Night mode */
 html.invert{
   --bg:#000;
   --ink:#fff;
@@ -258,8 +203,9 @@ html.invert{
 }
 
 /* ======================================================
-   HARD OVERRIDES
-   Fix shared CSS leaking into e-ink header
+   HARD OVERRIDES (fix shared CSS leakage)
+   - keep toggle in-row
+   - prevent greeting from getting squeezed into 3 lines
 ====================================================== */
 
 body.eink .top{
@@ -271,22 +217,25 @@ body.eink .top{
   gap:12px !important;
 }
 
-body.eink .top > div{
-  min-width:0 !important;
+/* Left side should be the flexible region */
+body.eink .top > div:first-child{
+  flex:1 1 auto !important;
+  min-width:0 !important; /* allows ellipsis */
 }
 
+/* Right side should NOT steal extra width */
 body.eink .topRight{
+  flex:0 0 auto !important;
+  margin-left:12px !important;
   display:flex !important;
   flex-direction:row !important;
   align-items:center !important;
   justify-content:flex-end !important;
   flex-wrap:nowrap !important;
   gap:10px !important;
-  margin-left:auto !important;
-  min-width:max-content !important;
 }
 
-/* Force the toggle back into normal flow */
+/* Kill any absolute/fixed/float leakage on the toggle */
 body.eink .themeToggle{
   position:static !important;
   inset:auto !important;
@@ -295,12 +244,19 @@ body.eink .themeToggle{
   bottom:auto !important;
   left:auto !important;
   float:none !important;
-  flex:0 0 auto !important;
   margin:0 !important;
+  flex:0 0 auto !important;
 }
 
-/* Keep clock from shrinking or wrapping */
+/* Keep clock stable */
 body.eink .clock{
   flex:0 0 auto !important;
   white-space:nowrap !important;
+}
+
+/* Keep greeting on ONE line like your original */
+body.eink .headline{
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
 }
