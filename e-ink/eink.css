@@ -1,13 +1,182 @@
-body.eink {
-  display: grid;
-  place-items: center;
-  overflow: hidden;
+:root{
+  --bg:#fff;
+  --ink:#111;
+  --muted:#555;
+  --light:#e6e6e6;
 }
 
-body.eink .stage {
-  width: 800px;
-  height: 480px;
-  padding: 18px;
+*{ box-sizing:border-box; }
 
-  transform: none !important;
+html,body{
+  margin:0;
+  height:100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, Segoe UI, Arial, sans-serif;
+}
+
+/* Force center the exact 800x480 canvas */
+body{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+/* Fixed stage for reTerminal */
+.stage{
+  width:800px;
+  height:480px;
+  padding:18px;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  gap:14px;
+  background:var(--bg);
+}
+
+/* The rest should match your normal styles (copy-paste from styles.css if needed) */
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  border-bottom:2px solid var(--ink);
+  padding-bottom:8px;
+}
+
+.headline{ font-size:28px; font-weight:800; }
+.subline{ margin-top:4px; font-size:14px; color:var(--muted); }
+
+.topRight{ display:flex; align-items:center; gap:10px; }
+
+.clock{
+  font-size:30px;
+  font-weight:800;
+  border:2px solid var(--ink);
+  padding:6px 12px;
+  border-radius:999px;
+  font-variant-numeric:tabular-nums;
+}
+
+.themeToggle{
+  background:none;
+  border:2px solid var(--ink);
+  color:var(--ink);
+  width:34px;
+  height:34px;
+  border-radius:999px;
+  cursor:pointer;
+  display:grid;
+  place-items:center;
+  padding:0;
+}
+
+.themeToggle svg{
+  width:18px; height:18px;
+  display:block;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+/* day -> show moon */
+.themeToggle .iconSun{ display:none; }
+/* night -> show sun */
+html.invert .themeToggle .iconMoon{ display:none; }
+html.invert .themeToggle .iconSun{ display:block; }
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.card{
+  border:2px solid var(--ink);
+  border-radius:14px;
+  padding:12px;
+  display:grid;
+  gap:10px;
+}
+
+.span2{ grid-column: span 2; }
+
+.cardTitle{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+}
+
+.icon{ width:22px; height:22px; display:grid; place-items:center; }
+.icon svg{ width:100%; height:100%; display:block; }
+
+/* Weather card styles */
+.wxMain{ display:flex; justify-content:space-between; align-items:baseline; }
+.wxTemp{ font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; }
+.wxDesc{ font-size:16px; font-weight:700; text-align:right; }
+
+.wxMeta{ display:flex; gap:18px; font-size:16px; }
+.k{ color:var(--muted); }
+.v{ font-weight:800; }
+
+.row{
+  display:flex;
+  justify-content:space-between;
+  border-top:1px solid var(--light);
+  padding:6px 0;
+}
+.row:first-of-type{ border-top:none; }
+
+.label{ color:var(--muted); font-weight:800; }
+.value{ font-weight:900; font-size:22px; font-variant-numeric:tabular-nums; }
+
+/* World clock strip */
+.wcList{
+  display:grid;
+  grid-template-columns:repeat(5, 1fr);
+  gap:8px;
+}
+
+.wcTile{
+  border:1px solid var(--light);
+  border-radius:10px;
+  padding:8px 6px;
+  display:grid;
+  gap:6px;
+  justify-items:center;
+}
+
+.wcCity{
+  font-size:12px;
+  font-weight:900;
+  color:var(--muted);
+}
+
+.wcTime{
+  font-size:16px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Footer */
+.footer{
+  border-top:2px solid var(--ink);
+  padding-top:6px;
+  display:flex;
+  justify-content:flex-end;
+}
+.tiny{ font-size:11px; }
+.muted{ color:var(--muted); }
+
+/* Night mode */
+html.invert{
+  --bg:#000;
+  --ink:#fff;
+  --muted:#bbb;
+  --light:#444;
 }
