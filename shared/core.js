@@ -103,39 +103,35 @@ export function initBack(btn, fallbackHref = "../") {
   });
 }
 
-/**
- * SenseCraft preview / embedded environment heuristic.
- * - iframe/modal often has a constrained viewport
- * - we want to "fit" the 800×480 stage inside it (no reflow)
- */
+/* ---------------- E-ink preview scaling ---------------- */
+
 function isEinkPreview() {
   const params = new URLSearchParams(location.search);
   if (params.get("eink") === "1") return true;
 
+  // SenseCraft preview is embedded (iframe)
   const embedded = window.self !== window.top;
+  if (!embedded) return false;
 
-  // SenseCraft preview tends to be embedded + landscape-ish + not phone-sized.
+  // Additional guard: landscape-ish and not huge
   const w = window.innerWidth;
   const h = window.innerHeight;
   const ratio = w / h;
-  const target = 800 / 480;
-  const closeRatio = Math.abs(ratio - target) < 0.35;
-
-  return embedded && closeRatio && w < 1100 && h < 900;
+  return ratio > 1.1 && w < 1400 && h < 900;
 }
 
 function setEinkMode(on) {
   document.documentElement.classList.toggle("eink", on);
 }
 
-/**
- * Desktop behavior:
- * - default: scale stage up/down to fit window
- * Mobile/tablet:
- * - CSS reflows at <=900px (unless eink preview)
- * E-ink preview:
- * - NEVER reflow; always keep 800x480 stage and scale to fit viewport box
- */
+function viewportBox() {
+  // visualViewport is usually the *actual visible box* (better for embedded/modals)
+  const vv = window.visualViewport;
+  const w = vv?.width ?? document.documentElement.clientWidth ?? window.innerWidth;
+  const h = vv?.height ?? document.documentElement.clientHeight ?? window.innerHeight;
+  return { w, h };
+}
+
 export function updateStageScale() {
   const stage = document.querySelector(".stage");
   if (!stage) return;
@@ -149,14 +145,18 @@ export function updateStageScale() {
     return;
   }
 
-  // Fit-to-box scaling (works for eink preview AND desktop)
-  const PAD = eink ? 16 : 40; // tighter padding in preview boxes
-  const vw = Math.max(100, window.innerWidth - PAD);
-  const vh = Math.max(100, window.innerHeight - PAD);
+  const { w, h } = viewportBox();
+
+  // In SenseCraft modal, there’s padding + a device frame;
+  // we must be conservative to avoid clipping.
+  const PAD = eink ? 180 : 40;
+
+  const vw = Math.max(100, w - PAD);
+  const vh = Math.max(100, h - PAD);
 
   const scale = Math.min(vw / 800, vh / 480);
 
-  // In normal desktop, cap how big it gets; in preview, never exceed 1
+  // In preview, never exceed 1 (don’t upscale)
   const capped = eink ? Math.min(scale, 1) : Math.min(scale, 2.0);
 
   document.documentElement.style.setProperty("--stage-scale", String(capped));
@@ -165,4 +165,10 @@ export function updateStageScale() {
 export function initStageScale() {
   updateStageScale();
   window.addEventListener("resize", updateStageScale);
+
+  // visualViewport changes without resize in many embedded contexts
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", updateStageScale);
+    window.visualViewport.addEventListener("scroll", updateStageScale);
+  }
 }
