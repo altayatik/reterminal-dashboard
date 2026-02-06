@@ -3,64 +3,40 @@
   --ink:#111;
   --muted:#555;
   --light:#e6e6e6;
-
-  /* kill shared scaler */
-  --stage-scale: 1 !important;
 }
 
 *{ box-sizing:border-box; }
 
 html, body{
-  margin:0 !important;
-  padding:0 !important;
-  width:100% !important;
-  height:100% !important;
-  overflow:hidden !important;
-  background:var(--bg) !important;
-  color:var(--ink) !important;
-  font-family: system-ui, Segoe UI, Arial, sans-serif !important;
-  -webkit-text-size-adjust:100% !important;
-  text-size-adjust:100% !important;
+  margin:0;
+  height:100%;
+  background:var(--bg);
+  color:var(--ink);
+  font-family: system-ui, Segoe UI, Arial, sans-serif;
+  overflow:hidden;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
 }
 
-/* Centering surface */
-body.eink .einkViewport{
-  position:fixed !important;
-  inset:0 !important;
-  display:grid !important;
-  place-items:center !important;
-  overflow:hidden !important;
-  background:var(--bg) !important;
+/* Center the fixed canvas */
+body.eink{
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 
-/* This element gets inline transform from JS (strongest) */
-body.eink .einkFit{
-  width:800px !important;
-  height:480px !important;
-  transform-origin:center center !important;
-}
-
-/* Stage: hard-disable any transform/zoom coming from shared CSS */
+/* Fixed 800x480 stage */
 body.eink .stage{
-  width:800px !important;
-  height:480px !important;
-  margin:0 !important;
+  width:800px;
+  height:480px;
   padding:18px;
-
-  display:grid !important;
-  grid-template-rows:auto 1fr auto !important;
-  gap:14px !important;
-
-  background:var(--bg) !important;
-
-  /* 🔥 absolute kill switch */
-  transform:none !important;
-  zoom:1 !important;
-  scale:1 !important;
-  transform-origin:center center !important;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  gap:14px;
+  background:var(--bg);
 }
 
-/* ===== your original styles ===== */
+/* Header */
 body.eink .top{
   display:flex;
   justify-content:space-between;
@@ -106,10 +82,13 @@ body.eink .themeToggle svg{
   stroke-linejoin:round;
 }
 
+/* day -> show moon */
 body.eink .themeToggle .iconSun{ display:none; }
+/* night -> show sun */
 html.invert body.eink .themeToggle .iconMoon{ display:none; }
 html.invert body.eink .themeToggle .iconSun{ display:block; }
 
+/* Grid */
 body.eink .grid{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -139,6 +118,7 @@ body.eink .cardTitle{
 body.eink .icon{ width:22px; height:22px; display:grid; place-items:center; }
 body.eink .icon svg{ width:100%; height:100%; display:block; }
 
+/* Weather */
 body.eink .wxMain{ display:flex; justify-content:space-between; align-items:baseline; }
 body.eink .wxTemp{ font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; }
 body.eink .wxDesc{ font-size:16px; font-weight:700; text-align:right; }
@@ -147,6 +127,7 @@ body.eink .wxMeta{ display:flex; gap:18px; font-size:16px; }
 body.eink .k{ color:var(--muted); }
 body.eink .v{ font-weight:800; }
 
+/* Markets */
 body.eink .row{
   display:flex;
   justify-content:space-between;
@@ -158,6 +139,7 @@ body.eink .row:first-of-type{ border-top:none; }
 body.eink .label{ color:var(--muted); font-weight:800; }
 body.eink .value{ font-weight:900; font-size:22px; font-variant-numeric:tabular-nums; }
 
+/* World clock */
 body.eink .wcList{
   display:grid;
   grid-template-columns:repeat(5, 1fr);
@@ -185,6 +167,7 @@ body.eink .wcTime{
   font-variant-numeric:tabular-nums;
 }
 
+/* Footer */
 body.eink .footer{
   border-top:2px solid var(--ink);
   padding-top:6px;
@@ -194,6 +177,7 @@ body.eink .footer{
 body.eink .tiny{ font-size:11px; }
 body.eink .muted{ color:var(--muted); }
 
+/* Night mode */
 html.invert{
   --bg:#000;
   --ink:#fff;

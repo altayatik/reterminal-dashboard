@@ -29,24 +29,7 @@ function fmtPrice(p) {
   })}`;
 }
 
-/* --- E-ink preview fit (inline transform beats host CSS) --- */
-function applyEinkFit() {
-  const fit = document.querySelector(".einkFit");
-  if (!fit) return;
-
-  const vv = window.visualViewport;
-  const vw = (vv?.width ?? window.innerWidth ?? document.documentElement.clientWidth ?? 800);
-  const vh = (vv?.height ?? window.innerHeight ?? document.documentElement.clientHeight ?? 480);
-
-  // scale DOWN only
-  const scale = Math.min(1, vw / 800, vh / 480);
-
-  // strongest possible application
-  fit.style.transformOrigin = "center center";
-  fit.style.transform = `scale(${scale})`;
-}
-
-/* ---------------- World clock ---------------- */
+/* ---------------- World clock (main card) ---------------- */
 
 function renderWorldClockStrip(container) {
   if (!container) return;
@@ -88,7 +71,9 @@ function renderFromEmbedded(el) {
 
     localStorage.setItem(
       LS_WEATHER,
-      JSON.stringify({ current: { code, temp, hi, lo, text: wxText(code) } })
+      JSON.stringify({
+        current: { code, temp, hi, lo, text: wxText(code) }
+      })
     );
   }
 
@@ -110,7 +95,13 @@ function renderFromEmbedded(el) {
     const txt = `Updated ${updated}${status}`;
     if (el.mktUpdated) el.mktUpdated.textContent = txt;
 
-    localStorage.setItem(LS_MARKETS, JSON.stringify({ ...m, updated_text: txt }));
+    localStorage.setItem(
+      LS_MARKETS,
+      JSON.stringify({
+        ...m,
+        updated_text: txt
+      })
+    );
   }
 }
 
@@ -150,21 +141,12 @@ function makeCardLink(node, href) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  // ✅ Detect /e-ink route via body class
   const isEink = document.body.classList.contains("eink");
 
+  // ✅ Only scale the stage on non-eink routes
   if (!isEink) {
     initStageScale();
-  } else {
-    applyEinkFit();
-
-    // resize + visualViewport changes (SenseCraft-like embeds)
-    window.addEventListener("resize", applyEinkFit, { passive: true });
-    window.visualViewport?.addEventListener("resize", applyEinkFit, { passive: true });
-
-    // hosts sometimes resize after first paint
-    setTimeout(applyEinkFit, 0);
-    setTimeout(applyEinkFit, 150);
-    setTimeout(applyEinkFit, 500);
   }
 
   const el = {
@@ -201,9 +183,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (el.mktIcon) el.mktIcon.innerHTML = iconChart();
   if (el.wcIcon) el.wcIcon.innerHTML = iconClock();
 
+  // World clock strip (horizontal tiles)
   renderWorldClockStrip(el.wcStrip);
   tickWorldClockStrip(el.wcStrip);
 
+  // Align ticks to the next minute boundary
   const msToNextMinute = (60 - new Date().getSeconds()) * 1000 + 50;
   setTimeout(() => {
     tickWorldClockStrip(el.wcStrip);
@@ -217,6 +201,7 @@ document.addEventListener("DOMContentLoaded", () => {
     el.updated.textContent = `Loaded ${tp.hour}:${tp.minute}`;
   }
 
+  // ✅ Links must be different when running under /e-ink/
   const base = isEink ? "../" : "./";
 
   makeCardLink($("weatherCard"), `${base}weather/`);

@@ -108,6 +108,7 @@ function isReTerminalMode() {
   return params.get("rt") === "1";
 }
 
+/* ✅ Safety: treat /e-ink route as fixed canvas */
 function isEinkRoute() {
   return document.body?.classList?.contains("eink") === true;
 }
@@ -116,7 +117,6 @@ export function updateStageScale() {
   const stage = document.querySelector(".stage");
   if (!stage) return;
 
-  // ✅ e-ink route: never scale stage
   if (isEinkRoute()) {
     document.documentElement.classList.remove("rt");
     document.documentElement.style.setProperty("--stage-scale", "1");
