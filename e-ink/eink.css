@@ -1,21 +1,35 @@
-/* Kill shared scaling completely in e-ink mode */
+:root {
+  --bg: #fff;
+  --ink: #111;
+  --muted: #555;
+  --light: #e6e6e6;
+}
+
+/* ────────────────────────────────────────────────
+   HARD RESET + FORCE DISABLE SHARED SCALING / CENTERING
+───────────────────────────────────────────────── */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  background: var(--bg) !important;
+  color: var(--ink) !important;
+  font-family: system-ui, Segoe UI, Arial, sans-serif !important;
+  -webkit-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
+}
+
+/* Kill shared --stage-scale and any transform */
 :root {
   --stage-scale: 1 !important;
 }
 
-body.eink .stage {
-  transform: none !important;
-  transform-origin: unset !important;
-  scale: 1 !important;
-  width: 800px !important;
-  height: 480px !important;
-  max-width: 800px !important;
-  max-height: 480px !important;
-  margin: 0 !important;
-  padding: 18px;
-}
-
-/* Make body & viewport bulletproof for iframe/preview */
+/* Override shared body grid → force flex centering */
 body.eink {
   display: flex !important;
   justify-content: center !important;
@@ -25,6 +39,11 @@ body.eink {
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
+  place-items: unset !important;
+  place-content: unset !important;
+  background: var(--bg) !important;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body.eink .einkViewport {
@@ -47,17 +66,186 @@ body.eink .einkFit {
   max-width: 100% !important;
   max-height: 100% !important;
   margin: auto !important;
+  transform: none !important;
 }
 
-/* If SenseCraft preview adds unwanted outer padding, this helps force full usage */
+/* Lock stage dimensions – override shared transform/scale completely */
+body.eink .stage {
+  width: 800px !important;
+  height: 480px !important;
+  max-width: 800px !important;
+  max-height: 480px !important;
+  margin: 0 !important;
+  padding: 18px;
+  display: grid !important;
+  grid-template-rows: auto 1fr auto !important;
+  gap: 14px !important;
+  background: var(--bg) !important;
+  transform: none !important;
+  transform-origin: unset !important;
+  scale: 1 !important;
+}
+
+/* Fallback when preview container is smaller than 800×480 */
 @media (max-width: 820px), (max-height: 500px) {
-  body.eink .einkFit {
+  body.eink .einkFit,
+  body.eink .stage {
     width: 100% !important;
     height: 100% !important;
   }
   body.eink .stage {
-    width: 100% !important;
-    height: 100% !important;
-    padding: 12px !important; /* smaller padding if forced full-screen */
+    padding: 12px !important;
   }
+}
+
+/* ────────────────────────────────────────────────
+   YOUR ORIGINAL STYLES BELOW – UNCHANGED
+───────────────────────────────────────────────── */
+
+/* ===== Header ===== */
+body.eink .top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 8px;
+}
+
+body.eink .headline { font-size: 28px; font-weight: 800; }
+body.eink .subline { margin-top: 4px; font-size: 14px; color: var(--muted); }
+
+body.eink .topRight { display: flex; align-items: center; gap: 10px; }
+
+body.eink .clock {
+  font-size: 30px;
+  font-weight: 800;
+  border: 2px solid var(--ink);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ===== Theme Toggle ===== */
+body.eink .themeToggle {
+  background: none;
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+body.eink .themeToggle svg {
+  width: 18px; height: 18px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.eink .themeToggle .iconSun { display: none; }
+html.invert body.eink .themeToggle .iconMoon { display: none; }
+html.invert body.eink .themeToggle .iconSun { display: block; }
+
+/* ===== Grid ===== */
+body.eink .grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+body.eink .card {
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+body.eink .span2 { grid-column: span 2; }
+
+body.eink .cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+
+body.eink .icon { width: 22px; height: 22px; display: grid; place-items: center; }
+body.eink .icon svg { width: 100%; height: 100%; display: block; }
+
+/* Weather */
+body.eink .wxMain { display: flex; justify-content: space-between; align-items: baseline; }
+body.eink .wxTemp { font-size: 52px; font-weight: 900; font-variant-numeric: tabular-nums; }
+body.eink .wxDesc { font-size: 16px; font-weight: 700; text-align: right; }
+
+body.eink .wxMeta { display: flex; gap: 18px; font-size: 16px; }
+body.eink .k { color: var(--muted); }
+body.eink .v { font-weight: 800; }
+
+/* Markets */
+body.eink .row {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--light);
+  padding: 6px 0;
+}
+body.eink .row:first-of-type { border-top: none; }
+
+body.eink .label { color: var(--muted); font-weight: 800; }
+body.eink .value { font-weight: 900; font-size: 22px; font-variant-numeric: tabular-nums; }
+
+/* World clock */
+body.eink .wcList {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+body.eink .wcTile {
+  border: 1px solid var(--light);
+  border-radius: 10px;
+  padding: 8px 6px;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+body.eink .wcCity {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--muted);
+}
+
+body.eink .wcTime {
+  font-size: 16px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Footer */
+body.eink .footer {
+  border-top: 2px solid var(--ink);
+  padding-top: 6px;
+  display: flex;
+  justify-content: flex-end;
+}
+body.eink .tiny { font-size: 11px; }
+body.eink .muted { color: var(--muted); }
+
+/* Night mode */
+html.invert {
+  --bg: #000;
+  --ink: #fff;
+  --muted: #bbb;
+  --light: #444;
 }
