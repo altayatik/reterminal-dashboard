@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weather Details</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main class="stage">
+
+  <header class="top">
+    <div>
+      <div class="headline" id="greeting">Weather</div>
+      <div class="subline" id="dateLine">--</div>
+    </div>
+
+    <div class="topRight">
+      <button
+        class="themeToggle"
+        id="themeToggle"
+        aria-label="Toggle night mode"
+        aria-pressed="false"
+        title="Night mode">
+
+        <svg class="iconMoon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79z"></path>
+        </svg>
+
+        <svg class="iconSun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+      </button>
+
+      <div class="clock" id="clock">--:--</div>
+    </div>
+  </header>
+
+  <section class="detail">
+
+    <div class="detailBar">
+      <button class="btn" id="backBtn" type="button">← Back</button>
+
+      <form class="cityForm" id="cityForm">
+        <input class="cityInput" id="cityInput" placeholder="City (e.g., Chicago)" autocomplete="off" />
+        <button class="btn" type="submit">Load</button>
+      </form>
+
+      <div class="tiny muted" id="locLabel">--</div>
+    </div>
+
+    <div class="detailGrid">
+      <article class="card span2">
+        <div class="cardTitle">
+          <span class="icon" id="wxIcon"></span>
+          <span>Current</span>
+        </div>
+
+        <div class="detailCurrent">
+          <div class="bigTemp" id="wxTemp">--°</div>
+          <div class="detailMeta">
+            <div><span class="k">Condition</span> <span class="v" id="wxDesc">--</span></div>
+            <div><span class="k">Feels</span> <span class="v" id="wxFeels">--°</span></div>
+            <div><span class="k">Humidity</span> <span class="v" id="wxHum">--%</span></div>
+            <div><span class="k">Wind</span> <span class="v" id="wxWind">--</span></div>
+            <div><span class="k">Pressure</span> <span class="v" id="wxPress">--</span></div>
+            <div><span class="k">Precip</span> <span class="v" id="wxPrecip">--</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card span2">
+        <div class="cardTitle">
+          <span class="icon">⏱</span>
+          <span>Next hours</span>
+        </div>
+        <div class="hourly" id="hourly">Loading…</div>
+      </article>
+
+      <article class="card span2">
+        <div class="cardTitle">
+          <span class="icon">📅</span>
+          <span>Next 7 days</span>
+        </div>
+        <div class="week" id="week"></div>
+      </article>
+    </div>
+
+  </section>
+
+  <footer class="footer">
+    <span class="tiny muted" id="updated">--</span>
+  </footer>
+
+</main>
+
+<script src="weather-page.js" defer></script>
+</body>
+</html>

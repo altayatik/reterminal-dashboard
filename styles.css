@@ -324,3 +324,114 @@ html.invert{
 @media (min-width: 601px) and (max-width: 900px){
   .week{ grid-template-columns:repeat(4,1fr); }
 }
+
+/* clickable cards */
+.card.clickable{
+  cursor:pointer;
+}
+.card.clickable:active{
+  transform: translateY(1px);
+}
+
+/* Weather detail layout */
+.detail{ display:grid; gap:14px; }
+
+.detailBar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  justify-content:space-between;
+}
+
+.btn{
+  background:none;
+  border:2px solid var(--ink);
+  color:var(--ink);
+  padding:6px 10px;
+  border-radius:999px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.cityForm{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.cityInput{
+  width:min(280px, 45vw);
+  border:2px solid var(--ink);
+  border-radius:999px;
+  padding:6px 10px;
+  background:var(--bg);
+  color:var(--ink);
+  outline:none;
+}
+
+.detailGrid{
+  display:grid;
+  gap:14px;
+}
+
+.detailCurrent{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+
+.bigTemp{
+  font-size:64px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+
+.detailMeta{
+  display:grid;
+  gap:6px;
+  min-width: 240px;
+}
+
+/* Hourly table */
+.hourly{
+  display:grid;
+  gap:8px;
+}
+
+.hourHeader,
+.hourRow{
+  display:grid;
+  grid-template-columns: 70px 32px 70px 80px 1fr;
+  align-items:center;
+  gap:10px;
+}
+
+.hourHeader{
+  font-size:12px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  color:var(--muted);
+}
+
+.hourTime{ font-weight:900; font-variant-numeric:tabular-nums; }
+.hourTemp{ font-weight:900; }
+.hourPop{ color:var(--muted); font-weight:800; }
+
+@media (max-width: 900px){
+  .detailBar{ flex-direction:column; align-items:flex-start; }
+  .detailCurrent{ flex-direction:column; align-items:flex-start; }
+  .hourHeader,
+  .hourRow{ grid-template-columns: 60px 28px 60px 70px 1fr; }
+}
+
+/* Weather detail page: allow content to scroll within the 800x480 stage */
+.detail{
+  overflow:auto;
+  min-height:0;   /* IMPORTANT: allows the grid middle row (1fr) to actually scroll */
+}
+
+.detailGrid{
+  padding-right: 6px; /* small gutter so scrollbar doesn't sit on content */
+}

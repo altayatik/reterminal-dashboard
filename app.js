@@ -451,6 +451,16 @@ document.addEventListener("DOMContentLoaded", () => {
   updateStageScale();
   window.addEventListener("resize", updateStageScale);
 
+    // Weather card → details page
+  const weatherCard = document.getElementById("weatherCard");
+  if (weatherCard) {
+    const go = () => { window.location.href = "weather.html"; };
+    weatherCard.addEventListener("click", go);
+    weatherCard.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+    });
+  }
+
 
 });
 
