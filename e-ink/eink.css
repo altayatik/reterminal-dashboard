@@ -1,4 +1,4 @@
-/* e-ink.css — DROP-IN REPLACEMENT (absolute-centering, iframe-proof) */
+/* e-ink.css — fixed 800x480, iframe/preview-safe centering */
 
 :root{
   --bg:#fff;
@@ -9,54 +9,62 @@
 
 *{ box-sizing:border-box; }
 
-/* Hard reset */
+/* Hard reset to beat shared styles */
 html, body{
   margin:0 !important;
   padding:0 !important;
+  width:100% !important;
+  height:100% !important;
+  overflow:hidden !important;
+
   background: var(--bg) !important;
   color: var(--ink) !important;
   font-family: system-ui, Segoe UI, Arial, sans-serif !important;
+
+  /* avoid “mobile-ish” text scaling behaviors */
+  -webkit-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
 }
 
-/* Make sure the page has a real box to center within */
-html{ width:100vw !important; height:100vh !important; overflow:hidden !important; }
-body{ width:100vw !important; height:100vh !important; overflow:hidden !important; }
-
-/*
-  THE FIX:
-  Don’t use flex/grid centering — use absolute centering.
-  This ignores “height: 100%” and iframe quirks.
-*/
+/* If the host applies scaling, don’t add your own transforms */
 body.eink{
-  position: relative !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  overflow: hidden !important;
   background: var(--bg) !important;
 }
 
-/* Fixed stage centered with absolute positioning */
+/* Centering surface (works even inside weird iframe containers) */
+body.eink .einkCenter{
+  position: fixed !important;
+  inset: 0 !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  overflow: hidden !important;
+  background: var(--bg) !important;
+
+  transform: none !important;
+  transform-origin: 50% 50% !important;
+}
+
+/* The actual canvas */
 body.eink .stage{
   width:800px !important;
   height:480px !important;
-
-  position: absolute !important;
-  left: 50% !important;
-  top: 50% !important;
-  transform: translate(-50%, -50%) !important;
-
   margin:0 !important;
-  padding:18px;
 
+  padding:18px;
   display:grid;
   grid-template-rows:auto 1fr auto;
   gap:14px;
 
-  background:var(--bg);
+  background: var(--bg);
+
+  transform: none !important;
+  transform-origin: 50% 50% !important;
 }
 
 /* ===== Header ===== */
-.top{
+body.eink .top{
   display:flex;
   justify-content:space-between;
   align-items:flex-start;
@@ -64,12 +72,12 @@ body.eink .stage{
   padding-bottom:8px;
 }
 
-.headline{ font-size:28px; font-weight:800; }
-.subline{ margin-top:4px; font-size:14px; color:var(--muted); }
+body.eink .headline{ font-size:28px; font-weight:800; }
+body.eink .subline{ margin-top:4px; font-size:14px; color:var(--muted); }
 
-.topRight{ display:flex; align-items:center; gap:10px; }
+body.eink .topRight{ display:flex; align-items:center; gap:10px; }
 
-.clock{
+body.eink .clock{
   font-size:30px;
   font-weight:800;
   border:2px solid var(--ink);
@@ -79,7 +87,7 @@ body.eink .stage{
 }
 
 /* ===== Theme Toggle ===== */
-.themeToggle{
+body.eink .themeToggle{
   background:none;
   border:2px solid var(--ink);
   color:var(--ink);
@@ -92,7 +100,7 @@ body.eink .stage{
   padding:0;
 }
 
-.themeToggle svg{
+body.eink .themeToggle svg{
   width:18px; height:18px;
   display:block;
   fill:none;
@@ -103,19 +111,19 @@ body.eink .stage{
 }
 
 /* day -> show moon */
-.themeToggle .iconSun{ display:none; }
+body.eink .themeToggle .iconSun{ display:none; }
 /* night -> show sun */
-html.invert .themeToggle .iconMoon{ display:none; }
-html.invert .themeToggle .iconSun{ display:block; }
+html.invert body.eink .themeToggle .iconMoon{ display:none; }
+html.invert body.eink .themeToggle .iconSun{ display:block; }
 
 /* ===== Grid ===== */
-.grid{
+body.eink .grid{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:14px;
 }
 
-.card{
+body.eink .card{
   border:2px solid var(--ink);
   border-radius:14px;
   padding:12px;
@@ -123,9 +131,9 @@ html.invert .themeToggle .iconSun{ display:block; }
   gap:10px;
 }
 
-.span2{ grid-column: span 2; }
+body.eink .span2{ grid-column: span 2; }
 
-.cardTitle{
+body.eink .cardTitle{
   display:flex;
   align-items:center;
   gap:8px;
@@ -135,37 +143,38 @@ html.invert .themeToggle .iconSun{ display:block; }
   text-transform:uppercase;
 }
 
-.icon{ width:22px; height:22px; display:grid; place-items:center; }
-.icon svg{ width:100%; height:100%; display:block; }
+body.eink .icon{ width:22px; height:22px; display:grid; place-items:center; }
+body.eink .icon svg{ width:100%; height:100%; display:block; }
 
-/* Weather card styles */
-.wxMain{ display:flex; justify-content:space-between; align-items:baseline; }
-.wxTemp{ font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; }
-.wxDesc{ font-size:16px; font-weight:700; text-align:right; }
+/* ===== Weather ===== */
+body.eink .wxMain{ display:flex; justify-content:space-between; align-items:baseline; }
+body.eink .wxTemp{ font-size:52px; font-weight:900; font-variant-numeric:tabular-nums; }
+body.eink .wxDesc{ font-size:16px; font-weight:700; text-align:right; }
 
-.wxMeta{ display:flex; gap:18px; font-size:16px; }
-.k{ color:var(--muted); }
-.v{ font-weight:800; }
+body.eink .wxMeta{ display:flex; gap:18px; font-size:16px; }
+body.eink .k{ color:var(--muted); }
+body.eink .v{ font-weight:800; }
 
-.row{
+/* ===== Markets ===== */
+body.eink .row{
   display:flex;
   justify-content:space-between;
   border-top:1px solid var(--light);
   padding:6px 0;
 }
-.row:first-of-type{ border-top:none; }
+body.eink .row:first-of-type{ border-top:none; }
 
-.label{ color:var(--muted); font-weight:800; }
-.value{ font-weight:900; font-size:22px; font-variant-numeric:tabular-nums; }
+body.eink .label{ color:var(--muted); font-weight:800; }
+body.eink .value{ font-weight:900; font-size:22px; font-variant-numeric:tabular-nums; }
 
-/* World clock strip */
-.wcList{
+/* ===== World clock ===== */
+body.eink .wcList{
   display:grid;
   grid-template-columns:repeat(5, 1fr);
   gap:8px;
 }
 
-.wcTile{
+body.eink .wcTile{
   border:1px solid var(--light);
   border-radius:10px;
   padding:8px 6px;
@@ -174,29 +183,29 @@ html.invert .themeToggle .iconSun{ display:block; }
   justify-items:center;
 }
 
-.wcCity{
+body.eink .wcCity{
   font-size:12px;
   font-weight:900;
   color:var(--muted);
 }
 
-.wcTime{
+body.eink .wcTime{
   font-size:16px;
   font-weight:900;
   font-variant-numeric:tabular-nums;
 }
 
-/* Footer */
-.footer{
+/* ===== Footer ===== */
+body.eink .footer{
   border-top:2px solid var(--ink);
   padding-top:6px;
   display:flex;
   justify-content:flex-end;
 }
-.tiny{ font-size:11px; }
-.muted{ color:var(--muted); }
+body.eink .tiny{ font-size:11px; }
+body.eink .muted{ color:var(--muted); }
 
-/* Night mode */
+/* ===== Night mode ===== */
 html.invert{
   --bg:#000;
   --ink:#fff;
