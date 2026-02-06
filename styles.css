@@ -4,7 +4,7 @@
   --muted:#555;
   --light:#e6e6e6;
 
-  /* JS sets this on desktop to scale 800x480 to fit screen */
+  /* JS sets this on desktop/preview to scale 800x480 to fit screen */
   --stage-scale: 1;
 }
 
@@ -25,7 +25,7 @@ body{
 }
 
 /* =========================================================
-   Base stage (pixel-perfect) + desktop scale
+   Base stage (pixel-perfect) + desktop/preview scale
    ========================================================= */
 .stage{
   width:800px;
@@ -185,7 +185,7 @@ html.invert .themeToggle .iconSun{ display:block; }
 .label{color:var(--muted);font-weight:800}
 .value{font-weight:900;font-size:22px;font-variant-numeric:tabular-nums}
 
-/* Week */
+/* Week (legacy; still used on weather detail) */
 .week{
   display:grid;
   grid-template-columns:repeat(7,1fr);
@@ -256,13 +256,11 @@ html.invert{
 }
 
 /* =========================================================
-   Detail pages shared (weather + markets)
+   Detail pages shared (weather + markets + world-clock)
    ========================================================= */
 .detail{
   display:grid;
   gap:14px;
-
-  /* key: allow middle pane to scroll inside 480px stage */
   overflow:auto;
   min-height:0;
   padding-right:6px;
@@ -291,7 +289,7 @@ html.invert{
 }
 
 /* =========================================================
-   Weather detail styles (restores the broken layout)
+   Weather detail styles
    ========================================================= */
 .cityForm{
   display:flex;
@@ -462,6 +460,48 @@ html.invert{
 }
 
 /* =========================================================
+   World Clock (main card strip + detail grid)
+   ========================================================= */
+.wcList{
+  display:grid;
+  grid-template-columns:repeat(5, 1fr);
+  gap:8px;
+}
+
+.wcTile{
+  border:1px solid var(--light);
+  border-radius:10px;
+  padding:6px 4px;
+  display:grid;
+  gap:6px;
+  justify-items:center;
+}
+
+.wcCity{
+  font-size:12px;
+  font-weight:800;
+  color:var(--muted);
+  text-align:center;
+}
+
+.wcTime{
+  font-size:13px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+  text-align:center;
+}
+
+.wcGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+}
+
+.wcBig{
+  font-variant-numeric:tabular-nums;
+}
+
+/* =========================================================
    Mobile/tablet: disable scaling & reflow
    ========================================================= */
 @media (max-width: 900px){
@@ -529,100 +569,17 @@ html.invert{
   .mktGrid4{
     grid-template-columns:1fr;
   }
+
+  .wcList{
+    grid-template-columns:repeat(3, 1fr);
+  }
+
+  .wcGrid{
+    grid-template-columns:1fr;
+  }
 }
 
 @media (min-width: 601px) and (max-width: 900px){
   .week{ grid-template-columns:repeat(4,1fr); }
-}
-
-.wcValue{
-  font-size:18px;
-}
-
-.wcList{
-  display:grid;
-  gap:6px;
-}
-
-.wcGrid{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:14px;
-}
-
-.wcBig{
-  font-size:22px;
-  font-variant-numeric: tabular-nums;
-}
-
-@media (max-width: 900px){
-  .wcGrid{ grid-template-columns: 1fr; }
-}
-
-/* ===========================
-   World Clock
-   =========================== */
-
-.wcList{
-  display:grid;
-  grid-template-columns:repeat(5, 1fr);
-  gap:8px;
-}
-
-.wcTile{
-  border:1px solid var(--light);
-  border-radius:10px;
-  padding:6px 4px;
-  display:grid;
-  gap:6px;
-  justify-items:center;
-}
-
-.wcCity{
-  font-size:12px;
-  font-weight:800;
-  color:var(--muted);
-  text-align:center;
-}
-
-.wcTime{
-  font-size:13px;
-  font-weight:900;
-  font-variant-numeric:tabular-nums;
-  text-align:center;
-}
-
-.wcGrid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:14px;
-}
-
-.wcBig{
-  font-variant-numeric:tabular-nums;
-}
-
-/* Mobile: keep it readable */
-@media (max-width: 900px){
-  .wcList{ grid-template-columns:repeat(3, 1fr); }
-  .wcGrid{ grid-template-columns:1fr; }
-}
-@media (min-width: 601px) and (max-width: 900px){
   .wcList{ grid-template-columns:repeat(4, 1fr); }
-}
-
-/* =========================================================
-   True device mode (reTerminal 800×480)
-   Use: ?device=1 (or ?eink=1)
-   ========================================================= */
-html.device body{
-  display:block;      /* no centering tricks */
-  overflow:hidden;    /* device wants exact frame */
-}
-
-html.device .stage{
-  width:800px !important;
-  height:480px !important;
-  transform:none !important;
-  margin:0;
 }

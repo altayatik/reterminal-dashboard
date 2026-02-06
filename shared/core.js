@@ -103,43 +103,73 @@ export function initBack(btn, fallbackHref = "../") {
   });
 }
 
-/* ---------------- Stage scaling ---------------- */
+/* ---------------------------------------------------------
+   Stage scaling
+   --------------------------------------------------------- */
 
-function isDeviceMode() {
-  const params = new URLSearchParams(location.search);
-  return params.get("device") === "1" || params.get("eink") === "1";
+// Detect embedded preview contexts (SenseCraft, iframes, etc.)
+function isEmbeddedPreview() {
+  return window.self !== window.top;
 }
 
-function setDeviceMode(on) {
-  document.documentElement.classList.toggle("device", on);
+// Find the best "container box" to fit within.
+// In SenseCraft, window size lies; but our stage lives inside a smaller visible box.
+function getFitBox(stageEl) {
+  // default: viewport
+  let best = {
+    w: document.documentElement.clientWidth || window.innerWidth,
+    h: document.documentElement.clientHeight || window.innerHeight
+  };
+
+  // If embedded, walk up parents and pick the smallest "reasonable" visible box.
+  if (!isEmbeddedPreview()) return best;
+
+  let el = stageEl.parentElement;
+  while (el && el !== document.body) {
+    const r = el.getBoundingClientRect();
+    const w = Math.round(r.width);
+    const h = Math.round(r.height);
+
+    // Ignore tiny / zero boxes and huge boxes
+    if (w >= 420 && h >= 260 && w <= 2000 && h <= 2000) {
+      // Prefer the smallest area box that still contains the stage area
+      const area = w * h;
+      const bestArea = best.w * best.h;
+      if (area < bestArea) best = { w, h };
+    }
+
+    el = el.parentElement;
+  }
+
+  return best;
 }
 
 export function updateStageScale() {
   const stage = document.querySelector(".stage");
   if (!stage) return;
 
-  const device = isDeviceMode();
-  setDeviceMode(device);
+  // Mobile/tablet: reflow CSS, but NOT in embedded preview (we want pixel-stage)
+  const isMobile = window.matchMedia("(max-width: 900px)").matches;
+  const embedded = isEmbeddedPreview();
 
-  // True device mode: pixel-perfect 800×480
-  if (device) {
+  if (isMobile && !embedded) {
     document.documentElement.style.setProperty("--stage-scale", "1");
     return;
   }
 
-  // Mobile/tablet: reflow (CSS)
-  if (window.matchMedia("(max-width: 900px)").matches) {
-    document.documentElement.style.setProperty("--stage-scale", "1");
-    return;
-  }
+  // Fit-to-box scaling (desktop + embedded preview)
+  const box = getFitBox(stage);
 
-  // Desktop: scale stage to fit
-  const PAD = 40;
-  const vw = Math.max(100, window.innerWidth - PAD);
-  const vh = Math.max(100, window.innerHeight - PAD);
+  // Use padding inside the box (SenseCraft has frame/padding)
+  const PAD = embedded ? 70 : 40;
+
+  const vw = Math.max(100, box.w - PAD);
+  const vh = Math.max(100, box.h - PAD);
 
   const scale = Math.min(vw / 800, vh / 480);
-  const capped = Math.min(scale, 2.0);
+
+  // In embedded preview: never upscale beyond 1
+  const capped = embedded ? Math.min(scale, 1) : Math.min(scale, 2.0);
 
   document.documentElement.style.setProperty("--stage-scale", String(capped));
 }
@@ -147,4 +177,13 @@ export function updateStageScale() {
 export function initStageScale() {
   updateStageScale();
   window.addEventListener("resize", updateStageScale);
+
+  // Re-measure after layout settles (SenseCraft modals animate in)
+  setTimeout(updateStageScale, 250);
+  setTimeout(updateStageScale, 800);
+
+  // Also re-measure when fonts load
+  if (document.fonts?.ready) {
+    document.fonts.ready.then(() => updateStageScale()).catch(() => {});
+  }
 }
