@@ -88,6 +88,27 @@ function applyThemeForTime(t, themeBtn) {
   }
 }
 
+/* -------------------- Desktop stage scaling -------------------- */
+function updateStageScale(){
+  const stage = document.querySelector(".stage");
+  if (!stage) return;
+
+  // below 900px: responsive layout (CSS disables transform)
+  if (window.matchMedia("(max-width: 900px)").matches) {
+    document.documentElement.style.setProperty("--stage-scale", "1");
+    return;
+  }
+
+  const PAD = 40;
+  const vw = window.innerWidth - PAD;
+  const vh = window.innerHeight - PAD;
+
+  const scale = Math.min(vw / 800, vh / 480);
+  const capped = Math.min(scale, 2.0);
+
+  document.documentElement.style.setProperty("--stage-scale", String(capped));
+}
+
 /* -------------------- Top UI -------------------- */
 
 function updateTop(el) {
@@ -219,21 +240,15 @@ function renderWeek(el, daily) {
   }
 
   el.innerHTML = "";
-
   daily.time.forEach((dateStr, i) => {
     const dayEl = document.createElement("div");
     dayEl.className = "day";
 
-    const name = new Date(dateStr)
-      .toLocaleDateString("en-US", { weekday: "short" });
-
+    const name = new Date(dateStr).toLocaleDateString("en-US", { weekday: "short" });
     const hi = Math.round(daily.temperature_2m_max[i]);
     const lo = Math.round(daily.temperature_2m_min[i]);
 
-    const code = Array.isArray(daily.weather_code)
-      ? daily.weather_code[i]
-      : null;
-
+    const code = Array.isArray(daily.weather_code) ? daily.weather_code[i] : null;
     const icon = code != null ? iconWeather(code) : "";
 
     dayEl.innerHTML = `
@@ -244,7 +259,6 @@ function renderWeek(el, daily) {
         <span class="lo">${lo}°</span>
       </div>
     `;
-
     el.appendChild(dayEl);
   });
 }
@@ -263,39 +277,24 @@ function fmtPrice(p) {
 
 function tryRenderCached(el) {
   try {
-    const cachedWeather = JSON.parse(
-      localStorage.getItem(LS_WEATHER)
-    );
-
+    const cachedWeather = JSON.parse(localStorage.getItem(LS_WEATHER));
     if (cachedWeather?.current) {
-      const { code, temp, hi, lo, text } =
-        cachedWeather.current;
-
+      const { code, temp, hi, lo, text } = cachedWeather.current;
       el.wxTemp.textContent = `${temp}°`;
       el.wxDesc.textContent = text;
       el.wxHi.textContent = `${hi}°`;
       el.wxLo.textContent = `${lo}°`;
-
       if (el.wxIcon) el.wxIcon.innerHTML = iconWeather(code);
     }
-
-    if (cachedWeather?.daily && el.week) {
-      renderWeek(el.week, cachedWeather.daily);
-    }
+    if (cachedWeather?.daily && el.week) renderWeek(el.week, cachedWeather.daily);
   } catch {}
 
   try {
-    const cachedMarkets = JSON.parse(
-      localStorage.getItem(LS_MARKETS)
-    );
-
+    const cachedMarkets = JSON.parse(localStorage.getItem(LS_MARKETS));
     if (cachedMarkets?.symbols) {
-      el.spy.textContent =
-        fmtPrice(cachedMarkets.symbols.SPY?.price);
-      el.iau.textContent =
-        fmtPrice(cachedMarkets.symbols.IAU?.price);
-      el.mktUpdated.textContent =
-        cachedMarkets.updated_hm || "Cached";
+      el.spy.textContent = fmtPrice(cachedMarkets.symbols.SPY?.price);
+      el.iau.textContent = fmtPrice(cachedMarkets.symbols.IAU?.price);
+      el.mktUpdated.textContent = cachedMarkets.updated_hm || "Cached";
     }
   } catch {}
 }
@@ -318,15 +317,10 @@ function loadFromEmbedded(el) {
     el.wxLo.textContent = `${lo}°`;
 
     if (el.wxIcon) el.wxIcon.innerHTML = iconWeather(code);
-
     if (w.daily) renderWeek(el.week, w.daily);
 
     localStorage.setItem(LS_WEATHER, JSON.stringify({
-      current:{
-        code, temp:curTemp, hi, lo,
-        text:wxText(code),
-        updated_iso:w.updated_iso || new Date().toISOString()
-      },
+      current:{ code, temp:curTemp, hi, lo, text:wxText(code), updated_iso:w.updated_iso || new Date().toISOString() },
       daily:w.daily
     }));
   }
@@ -349,8 +343,7 @@ function loadFromEmbedded(el) {
         ? (m.in_hours ? " · Market open" : " · Market closed")
         : "";
 
-    el.mktUpdated.textContent =
-      `Updated ${updateDisplay}${status}`;
+    el.mktUpdated.textContent = `Updated ${updateDisplay}${status}`;
 
     localStorage.setItem(LS_MARKETS, JSON.stringify({
       ...m,
@@ -389,6 +382,9 @@ document.addEventListener("DOMContentLoaded", () => {
     weekIcon: document.getElementById("weekIcon")
   };
 
+  updateStageScale();
+  window.addEventListener("resize", updateStageScale);
+
   applyThemeForTime(chicagoParts(), el.themeBtn);
 
   if (el.themeBtn) {
@@ -405,8 +401,26 @@ document.addEventListener("DOMContentLoaded", () => {
   tryRenderCached(el);
   scheduleMinuteClock(el);
 
-  try { loadFromEmbedded(el); }
-  catch(e){ console.error(e); }
+  try { loadFromEmbedded(el); } catch (e) { console.error(e); }
+
+  // ✅ Folder-based routes
+  const weatherCard = document.getElementById("weatherCard");
+  if (weatherCard) {
+    const go = () => { window.location.href = "./weather/"; };
+    weatherCard.addEventListener("click", go);
+    weatherCard.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+    });
+  }
+
+  const marketsCard = document.getElementById("marketsCard");
+  if (marketsCard) {
+    const go = () => { window.location.href = "./market/"; };
+    marketsCard.addEventListener("click", go);
+    marketsCard.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+    });
+  }
 
   setTimeout(() => {
     if (!window.DASH_DATA?.markets?.symbols?.SPY?.price) {
@@ -421,46 +435,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, 8000);
 
-
-    // --- Desktop scaling: keep 800x480 design, scale to fit viewport ---
-  function updateStageScale(){
-    const stage = document.querySelector(".stage");
-    if (!stage) return;
-
-    // Only scale in desktop mode (CSS switches to responsive below 900px)
-    if (window.matchMedia("(max-width: 900px)").matches) {
-      document.documentElement.style.setProperty("--stage-scale", "1");
-      return;
-    }
-
-    const PAD = 40; // safe breathing room around the stage
-    const vw = window.innerWidth - PAD;
-    const vh = window.innerHeight - PAD;
-
-    const scale = Math.min(vw / 800, vh / 480);
-
-    // cap scale so it doesn't get comically huge on ultra-wide monitors
-    const capped = Math.min(scale, 2.0);
-
-    document.documentElement.style.setProperty(
-      "--stage-scale",
-      String(capped)
-    );
-  }
-
-  updateStageScale();
-  window.addEventListener("resize", updateStageScale);
-
-    // Weather card → details page
-  const weatherCard = document.getElementById("weatherCard");
-  if (weatherCard) {
-    const go = () => { window.location.href = "weather.html"; };
-    weatherCard.addEventListener("click", go);
-    weatherCard.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
-    });
-  }
-
-
 });
-

@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Market</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+<main class="stage">
+
+  <header class="top">
+    <div>
+      <div class="headline" id="greeting">Market</div>
+      <div class="subline" id="dateLine">--</div>
+    </div>
+
+    <div class="topRight">
+      <button
+        class="themeToggle"
+        id="themeToggle"
+        aria-label="Toggle night mode"
+        aria-pressed="false"
+        title="Night mode">
+
+        <!-- Moon (shown in day mode) -->
+        <svg class="iconMoon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79z"></path>
+        </svg>
+
+        <!-- Sun (shown in night mode) -->
+        <svg class="iconSun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+        </svg>
+
+      </button>
+
+      <div class="clock" id="clock">--:--</div>
+    </div>
+  </header>
+
+  <section class="detail">
+
+    <div class="detailBar">
+      <button class="btn" id="backBtn" type="button">← Back</button>
+      <div class="tiny muted" id="mktStatus">--</div>
+    </div>
+
+    <div class="detailGrid">
+
+      <article class="card span2">
+        <div class="cardTitle">
+          <span class="icon" id="mktIcon"></span>
+          <span>5-Day Snapshot</span>
+        </div>
+
+        <div class="mktLegend">
+          <div class="tiny muted">Last 5 trading closes (oldest → newest).</div>
+          <div class="tiny muted" id="mktUpdated">--</div>
+        </div>
+      </article>
+
+      <article class="card span2">
+        <div class="mktGrid4" id="mktGrid"></div>
+      </article>
+
+    </div>
+
+  </section>
+
+  <footer class="footer">
+    <span class="tiny muted" id="loaded">--</span>
+  </footer>
+
+</main>
+
+<script src="../config.js"></script>
+<script src="./markets-page.js" defer></script>
+</body>
+</html>

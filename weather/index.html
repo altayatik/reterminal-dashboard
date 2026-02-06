@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Weather Details</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Weather</title>
+  <link rel="stylesheet" href="../styles.css">
 </head>
 <body>
 
@@ -24,14 +24,17 @@
         aria-pressed="false"
         title="Night mode">
 
+        <!-- Moon (shown in day mode) -->
         <svg class="iconMoon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M21 12.79A9 9 0 1 1 11.21 3A7 7 0 0 0 21 12.79z"></path>
         </svg>
 
+        <!-- Sun (shown in night mode) -->
         <svg class="iconSun" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4"></circle>
           <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
         </svg>
+
       </button>
 
       <div class="clock" id="clock">--:--</div>
@@ -73,7 +76,7 @@
 
       <article class="card span2">
         <div class="cardTitle">
-          <span class="icon">⏱</span>
+          <span class="icon" id="hourIcon"></span>
           <span>Next hours</span>
         </div>
         <div class="hourly" id="hourly">Loading…</div>
@@ -81,7 +84,7 @@
 
       <article class="card span2">
         <div class="cardTitle">
-          <span class="icon">📅</span>
+          <span class="icon" id="weekIcon"></span>
           <span>Next 7 days</span>
         </div>
         <div class="week" id="week"></div>
@@ -96,6 +99,7 @@
 
 </main>
 
-<script src="weather-page.js" defer></script>
+<script src="../config.js"></script>
+<script src="./weather-page.js" defer></script>
 </body>
 </html>

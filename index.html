@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>E-Ink Dashboard</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 
@@ -43,8 +43,8 @@
 
   <section class="grid">
 
-    <!-- current weather -->
-    <article class="card clickable" id="weatherCard" role="link" tabindex="0" aria-label="Open detailed weather">
+    <!-- Weather -->
+    <article class="card" id="weatherCard" role="link" tabindex="0" aria-label="Open detailed weather">
       <div class="cardTitle">
         <span class="icon" id="wxIcon"></span>
         <span>Weather</span>
@@ -61,8 +61,8 @@
       </div>
     </article>
 
-    <!-- markets -->
-    <article class="card">
+    <!-- Markets -->
+    <article class="card" id="marketsCard" role="link" tabindex="0" aria-label="Open detailed markets">
       <div class="cardTitle">
         <span class="icon" id="mktIcon"></span>
         <span>Markets</span>
@@ -81,7 +81,7 @@
       <div class="tiny muted" id="mktUpdated">--</div>
     </article>
 
-    <!-- week -->
+    <!-- Next 7 days -->
     <article class="card span2">
       <div class="cardTitle">
         <span class="icon" id="weekIcon"></span>
@@ -99,10 +99,11 @@
 
 </main>
 
+<!-- Data payloads (same as your current approach) -->
 <script src="https://dashboard-data-api.vercel.app/api/weather"></script>
 <script src="https://dashboard-data-api.vercel.app/api/markets"></script>
 
-<script src="config.js"></script>
-<script src="app.js" defer></script>
+<script src="./config.js"></script>
+<script src="./app.js" defer></script>
 </body>
 </html>

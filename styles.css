@@ -4,7 +4,7 @@
   --muted:#555;
   --light:#e6e6e6;
 
-  /* stage scale for desktop mode (set by JS) */
+  /* JS sets this on desktop to scale 800x480 to fit screen */
   --stage-scale: 1;
 }
 
@@ -18,7 +18,6 @@ html,body{
   font-family:system-ui,Segoe UI,Arial,sans-serif;
 }
 
-/* Center stage by default */
 body{
   display:grid;
   place-items:center;
@@ -26,25 +25,21 @@ body{
 }
 
 /* =========================================================
-   DESKTOP MODE (default): pixel-perfect 800x480, scaled to fit
+   Base stage (pixel-perfect) + desktop scale
    ========================================================= */
-
 .stage{
   width:800px;
   height:480px;
   padding:18px;
-
   display:grid;
   grid-template-rows:auto 1fr auto;
   gap:14px;
   background:var(--bg);
 
-  /* scale to fit viewport */
   transform: scale(var(--stage-scale));
-  transform-origin: center center;
+  transform-origin:center center;
 }
 
-/* Top */
 .top{
   display:flex;
   justify-content:space-between;
@@ -105,14 +100,12 @@ body{
 
 /* default = day -> show moon */
 .themeToggle .iconSun{ display:none; }
-
 /* night -> show sun */
 html.invert .themeToggle .iconMoon{ display:none; }
 html.invert .themeToggle .iconSun{ display:block; }
 
 .themeToggle:active{ transform:scale(.96); }
 
-/* Grid */
 .grid{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -152,7 +145,7 @@ html.invert .themeToggle .iconSun{ display:block; }
   display:block;
 }
 
-/* Weather */
+/* Weather card styles */
 .wxMain{
   display:flex;
   justify-content:space-between;
@@ -180,7 +173,6 @@ html.invert .themeToggle .iconSun{ display:block; }
 .k{color:var(--muted)}
 .v{font-weight:800}
 
-/* Markets */
 .row{
   display:flex;
   justify-content:space-between;
@@ -238,7 +230,6 @@ html.invert .themeToggle .iconSun{ display:block; }
 
 .lo{color:var(--muted)}
 
-/* Footer */
 .footer{
   border-top:2px solid var(--ink);
   padding-top:6px;
@@ -265,76 +256,22 @@ html.invert{
 }
 
 /* =========================================================
-   RESPONSIVE MODE (tablet/mobile): real reflow, no scaling
+   Detail pages shared (weather + markets)
    ========================================================= */
+.detail{
+  display:grid;
+  gap:14px;
 
-/* Switch to responsive layout when viewport is narrow */
-@media (max-width: 900px){
-
-  body{
-    place-items:stretch;
-    overflow:auto;
-  }
-
-  .stage{
-    width:100%;
-    height:auto;
-    min-height:100svh;
-
-    transform:none;          /* ✅ disable desktop scaling */
-    padding:16px;
-
-    grid-template-rows:auto auto auto; /* ✅ content-driven */
-  }
-
-  .top{
-    flex-direction:column;
-    gap:10px;
-  }
-
-  .topRight{
-    width:100%;
-    justify-content:space-between;
-  }
-
-  .grid{
-    grid-template-columns:1fr; /* single column */
-  }
-
-  .span2{
-    grid-column:auto;
-  }
-
-  .wxMain{
-    flex-direction:column;
-    align-items:flex-start;
-    gap:6px;
-  }
-
-  .wxDesc{
-    text-align:left;
-  }
-
-  .week{
-    grid-template-columns:repeat(3,1fr);
-  }
+  /* key: allow middle pane to scroll inside 480px stage */
+  overflow:auto;
+  min-height:0;
+  padding-right:6px;
 }
 
-/* Tablet a bit wider forecast */
-@media (min-width: 601px) and (max-width: 900px){
-  .week{ grid-template-columns:repeat(4,1fr); }
+.detailGrid{
+  display:grid;
+  gap:14px;
 }
-
-/* clickable cards */
-.card.clickable{
-  cursor:pointer;
-}
-.card.clickable:active{
-  transform: translateY(1px);
-}
-
-/* Weather detail layout */
-.detail{ display:grid; gap:14px; }
 
 .detailBar{
   display:flex;
@@ -353,6 +290,9 @@ html.invert{
   cursor:pointer;
 }
 
+/* =========================================================
+   Weather detail styles (restores the broken layout)
+   ========================================================= */
 .cityForm{
   display:flex;
   gap:8px;
@@ -367,11 +307,6 @@ html.invert{
   background:var(--bg);
   color:var(--ink);
   outline:none;
-}
-
-.detailGrid{
-  display:grid;
-  gap:14px;
 }
 
 .detailCurrent{
@@ -390,7 +325,7 @@ html.invert{
 .detailMeta{
   display:grid;
   gap:6px;
-  min-width: 240px;
+  min-width:240px;
 }
 
 /* Hourly table */
@@ -419,19 +354,183 @@ html.invert{
 .hourTemp{ font-weight:900; }
 .hourPop{ color:var(--muted); font-weight:800; }
 
+/* =========================================================
+   Markets detail styles
+   ========================================================= */
+.mktLegend{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-end;
+}
+
+.mktGrid4{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:14px;
+}
+
+.mktBlock{
+  border:1px solid var(--light);
+  border-radius:12px;
+  padding:10px;
+  display:grid;
+  gap:8px;
+}
+
+.mktHead{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+}
+
+.mktSym{
+  font-weight:900;
+  font-size:16px;
+  letter-spacing:.4px;
+}
+
+.mktNow{
+  font-weight:900;
+  font-size:18px;
+  font-variant-numeric:tabular-nums;
+}
+
+.mktSub{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:10px;
+}
+
+.mktDelta{
+  display:flex;
+  gap:10px;
+  align-items:baseline;
+  font-size:13px;
+}
+
+.mktSpark svg{
+  width:100%;
+  height:28px;
+  display:block;
+}
+
+.sparkBase{
+  stroke:var(--light);
+  stroke-width:1;
+}
+
+.sparkLine{
+  fill:none;
+  stroke:var(--ink);
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.mktTable{
+  display:grid;
+  gap:4px;
+  font-size:12px;
+}
+
+.mktRow{
+  display:flex;
+  justify-content:space-between;
+  border-top:1px solid var(--light);
+  padding-top:4px;
+}
+
+.mktRowHead{
+  border-top:none;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  color:var(--muted);
+  padding-top:0;
+}
+
+.mktDate{
+  color:var(--muted);
+  font-weight:800;
+}
+
+.mktClose{
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+
+/* =========================================================
+   Mobile/tablet: disable scaling & reflow
+   ========================================================= */
 @media (max-width: 900px){
-  .detailBar{ flex-direction:column; align-items:flex-start; }
-  .detailCurrent{ flex-direction:column; align-items:flex-start; }
+  body{
+    place-items:stretch;
+    overflow:auto;
+  }
+
+  .stage{
+    width:100%;
+    height:auto;
+    min-height:100svh;
+    transform:none;
+    padding:16px;
+    grid-template-rows:auto auto auto;
+  }
+
+  .top{
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .topRight{
+    width:100%;
+    justify-content:space-between;
+  }
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .span2{
+    grid-column:auto;
+  }
+
+  .wxMain{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:6px;
+  }
+
+  .wxDesc{
+    text-align:left;
+  }
+
+  .week{
+    grid-template-columns:repeat(3,1fr);
+  }
+
+  .detailBar{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .detailCurrent{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
   .hourHeader,
-  .hourRow{ grid-template-columns: 60px 28px 60px 70px 1fr; }
+  .hourRow{
+    grid-template-columns: 60px 28px 60px 70px 1fr;
+  }
+
+  .mktGrid4{
+    grid-template-columns:1fr;
+  }
 }
 
-/* Weather detail page: allow content to scroll within the 800x480 stage */
-.detail{
-  overflow:auto;
-  min-height:0;   /* IMPORTANT: allows the grid middle row (1fr) to actually scroll */
-}
-
-.detailGrid{
-  padding-right: 6px; /* small gutter so scrollbar doesn't sit on content */
+@media (min-width: 601px) and (max-width: 900px){
+  .week{ grid-template-columns:repeat(4,1fr); }
 }

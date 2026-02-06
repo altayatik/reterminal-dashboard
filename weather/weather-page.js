@@ -1,4 +1,5 @@
 // weather-page.js
+
 const CFG = window.DASH_CONFIG ?? {
   name: "Altay",
   timezone: "America/Chicago",
@@ -9,7 +10,7 @@ const LS_THEME_OVERRIDE = "dash_theme_override";
 const LS_CITY = "dash_weather_city";
 const API_BASE = "https://dashboard-data-api.vercel.app/api/weather";
 
-/* ---------------- Theme logic (same behavior as app.js) ---------------- */
+/* ---------------- Theme logic ---------------- */
 
 function isNightHour(hour24) {
   return hour24 >= 21 || hour24 < 8;
@@ -78,7 +79,47 @@ function applyThemeForTime(t, themeBtn) {
   }
 }
 
+/* ---------------- Desktop stage scaling ---------------- */
+function updateStageScale(){
+  const stage = document.querySelector(".stage");
+  if (!stage) return;
+
+  if (window.matchMedia("(max-width: 900px)").matches) {
+    document.documentElement.style.setProperty("--stage-scale", "1");
+    return;
+  }
+
+  const PAD = 40;
+  const vw = window.innerWidth - PAD;
+  const vh = window.innerHeight - PAD;
+
+  const scale = Math.min(vw / 800, vh / 480);
+  const capped = Math.min(scale, 2.0);
+
+  document.documentElement.style.setProperty("--stage-scale", String(capped));
+}
+
 /* ---------------- Icons + text ---------------- */
+
+function iconWeek() {
+  return `
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+    <line x1="16" y1="2" x2="16" y2="6"></line>
+    <line x1="8" y1="2" x2="8" y2="6"></line>
+    <line x1="3" y1="10" x2="21" y2="10"></line>
+  </svg>`;
+}
+
+function iconClock() {
+  return `
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="9"></circle>
+    <path d="M12 7v6l4 2"></path>
+  </svg>`;
+}
 
 const weatherCodes = {
   0: "Clear sky",
@@ -120,37 +161,37 @@ function iconWeather(code) {
     (code >= 95) ? "storm" : "cloud";
 
   if (kind === "sun") return `
-  <svg viewBox="0 0 24 24" width="22" height="22">
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
     <circle cx="12" cy="12" r="4" ${c}></circle>
     <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" ${c}></path>
   </svg>`;
 
   if (kind === "fog") return `
-  <svg viewBox="0 0 24 24" width="22" height="22">
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
     <path d="M4 10h16M6 14h12M4 18h16" ${c}></path>
     <path d="M7 10a5 5 0 0 1 10 0" ${c}></path>
   </svg>`;
 
   if (kind === "rain") return `
-  <svg viewBox="0 0 24 24" width="22" height="22">
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
     <path d="M7 18a4 4 0 0 1 0-8 6 6 0 0 1 11.6 1.6A3.5 3.5 0 1 1 18 18H7" ${c}></path>
     <path d="M8 20l1-2M12 20l1-2M16 20l1-2" ${c}></path>
   </svg>`;
 
   if (kind === "snow") return `
-  <svg viewBox="0 0 24 24" width="22" height="22">
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
     <path d="M7 17a4 4 0 0 1 0-8 6 6 0 0 1 11.6 1.6A3.5 3.5 0 1 1 18 17H7" ${c}></path>
     <path d="M9 20h.01M12 20h.01M15 20h.01" ${c}></path>
   </svg>`;
 
   if (kind === "storm") return `
-  <svg viewBox="0 0 24 24" width="22" height="22">
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
     <path d="M7 18a4 4 0 0 1 0-8 6 6 0 0 1 11.6 1.6A3.5 3.5 0 1 1 18 18H7" ${c}></path>
     <path d="M13 13l-2 4h3l-2 4" ${c}></path>
   </svg>`;
 
   return `
-  <svg viewBox="0 0 24 24" width="22" height="22">
+  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
     <path d="M7 18a4 4 0 0 1 0-8 6 6 0 0 1 11.6 1.6A3.5 3.5 0 1 1 18 18H7" ${c}></path>
   </svg>`;
 }
@@ -168,27 +209,19 @@ function renderWeek(el, daily) {
     const dayEl = document.createElement("div");
     dayEl.className = "day";
 
-    const name = new Date(dateStr)
-      .toLocaleDateString("en-US", { weekday: "short" });
-
+    const name = new Date(dateStr).toLocaleDateString("en-US", { weekday: "short" });
     const hi = Math.round(daily.temperature_2m_max[i]);
     const lo = Math.round(daily.temperature_2m_min[i]);
-
-    const code = Array.isArray(daily.weather_code)
-      ? daily.weather_code[i]
-      : null;
-
-    const icon = code != null ? iconWeather(code) : "";
+    const code = Array.isArray(daily.weather_code) ? daily.weather_code[i] : null;
 
     dayEl.innerHTML = `
       <div class="dayName">${name}</div>
-      <div class="dayIcon">${icon}</div>
+      <div class="dayIcon">${code != null ? iconWeather(code) : ""}</div>
       <div class="dayTemps">
         <span class="hi">${hi}°</span>
         <span class="lo">${lo}°</span>
       </div>
     `;
-
     el.appendChild(dayEl);
   });
 }
@@ -199,7 +232,6 @@ function renderHourly(el, hourly, tz) {
     return;
   }
 
-  // show next 10 entries
   const n = Math.min(10, hourly.time.length);
   const rows = [];
   for (let i = 0; i < n; i++) {
@@ -220,9 +252,9 @@ function renderHourly(el, hourly, tz) {
       <div class="hourRow">
         <div class="hourTime">${hhmm}</div>
         <div class="hourIcon">${iconWeather(code)}</div>
-        <div class="hourTemp">${Math.round(temp)}°</div>
-        <div class="hourPop">${pop != null ? `${Math.round(pop)}%` : "--"}</div>
-        <div class="hourWind">${wind != null ? `${Math.round(wind)} mph` : "--"}</div>
+        <div class="hourTemp">${temp != null ? Math.round(temp) + "°" : "--"}</div>
+        <div class="hourPop">${pop != null ? Math.round(pop) + "%" : "--"}</div>
+        <div class="hourWind">${wind != null ? Math.round(wind) + " mph" : "--"}</div>
       </div>
     `);
   }
@@ -239,7 +271,6 @@ function renderHourly(el, hourly, tz) {
 
 function loadWeatherScript(city) {
   return new Promise((resolve, reject) => {
-    // clear previous data slot
     window.DASH_DATA = window.DASH_DATA || {};
     delete window.DASH_DATA.weather;
 
@@ -258,7 +289,6 @@ function loadWeatherScript(city) {
 
 document.addEventListener("DOMContentLoaded", async () => {
   const el = {
-    greeting: document.getElementById("greeting"),
     dateLine: document.getElementById("dateLine"),
     clock: document.getElementById("clock"),
     themeBtn: document.getElementById("themeToggle"),
@@ -278,14 +308,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     wxPrecip: document.getElementById("wxPrecip"),
 
     hourly: document.getElementById("hourly"),
+    hourIcon: document.getElementById("hourIcon"),
+    weekIcon: document.getElementById("weekIcon"),
     week: document.getElementById("week"),
     updated: document.getElementById("updated")
   };
 
-  const t = chicagoParts();
-  applyThemeForTime(t, el.themeBtn);
+  updateStageScale();
+  window.addEventListener("resize", updateStageScale);
 
-  // top clock
+  // ✅ consistent icons (no emoji)
+  if (el.hourIcon) el.hourIcon.innerHTML = iconClock();
+  if (el.weekIcon) el.weekIcon.innerHTML = iconWeek();
+
   const tick = () => {
     const tt = chicagoParts();
     applyThemeForTime(tt, el.themeBtn);
@@ -295,7 +330,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   tick();
   setInterval(tick, 60 * 1000);
 
-  // theme toggle
   if (el.themeBtn) {
     el.themeBtn.addEventListener("click", () => {
       const next = getInvert() ? "normal" : "invert";
@@ -304,10 +338,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // back
-  el.backBtn?.addEventListener("click", () => history.back());
+  el.backBtn?.addEventListener("click", () => {
+    if (history.length > 1) history.back();
+    else window.location.href = "../";
+  });
 
-  // city form
   const savedCity = localStorage.getItem(LS_CITY) || "";
   if (savedCity) el.cityInput.value = savedCity;
 
@@ -328,22 +363,26 @@ document.addEventListener("DOMContentLoaded", async () => {
       const code = w.current.weather_code;
       const temp = Math.round(w.current.temperature_2m);
       const feels = Math.round(w.current.apparent_temperature ?? temp);
-      const hum = w.current.relative_humidity_2m;
-      const windSpd = w.current.wind_speed_10m;
-      const windDir = w.current.wind_direction_10m;
-      const press = w.current.pressure_msl;
-      const precip = w.current.precipitation;
 
       el.wxIcon.innerHTML = iconWeather(code);
       el.wxTemp.textContent = `${temp}°`;
       el.wxDesc.textContent = wxText(code);
       el.wxFeels.textContent = `${feels}°`;
+
+      const hum = w.current.relative_humidity_2m;
       el.wxHum.textContent = hum != null ? `${Math.round(hum)}%` : "--%";
+
+      const windSpd = w.current.wind_speed_10m;
+      const windDir = w.current.wind_direction_10m;
       el.wxWind.textContent =
         windSpd != null
           ? `${Math.round(windSpd)} mph${windDir != null ? ` @ ${Math.round(windDir)}°` : ""}`
           : "--";
+
+      const press = w.current.pressure_msl;
       el.wxPress.textContent = press != null ? `${Math.round(press)} hPa` : "--";
+
+      const precip = w.current.precipitation;
       el.wxPrecip.textContent = precip != null ? `${precip} in` : "--";
 
       el.locLabel.textContent = w.location?.label || "--";
@@ -353,7 +392,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const tt = chicagoParts();
       el.updated.textContent = `Loaded ${tt.hour}:${tt.minute}`;
-
     } catch (err) {
       el.hourly.textContent = "Weather unavailable";
       el.locLabel.textContent = String(err?.message || err);
@@ -361,32 +399,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   await loadAndRender(savedCity);
-
-
-    // --- Desktop scaling: keep 800x480 design, scale to fit viewport ---
-  function updateStageScale(){
-    const stage = document.querySelector(".stage");
-    if (!stage) return;
-
-    // Only scale in desktop mode (CSS switches to responsive below 900px)
-    if (window.matchMedia("(max-width: 900px)").matches) {
-      document.documentElement.style.setProperty("--stage-scale", "1");
-      return;
-    }
-
-    const PAD = 40; // breathing room
-    const vw = window.innerWidth - PAD;
-    const vh = window.innerHeight - PAD;
-
-    const scale = Math.min(vw / 800, vh / 480);
-    const capped = Math.min(scale, 2.0);
-
-    document.documentElement.style.setProperty("--stage-scale", String(capped));
-  }
-
-  updateStageScale();
-  window.addEventListener("resize", updateStageScale);
-
-
-  
 });
