@@ -30,8 +30,7 @@ function fmtPrice(p) {
   })}`;
 }
 
-/* ---------- Footer formatting helpers (24h) ---------- */
-
+/* ---------- Footer helpers ---------- */
 function toDateObj(iso) {
   if (!iso) return null;
   const d = new Date(iso);
@@ -40,18 +39,11 @@ function toDateObj(iso) {
 }
 
 function fmtMMDD(d) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "2-digit",
-    day: "2-digit"
-  }).format(d);
+  return new Intl.DateTimeFormat("en-US", { month: "2-digit", day: "2-digit" }).format(d);
 }
 
 function fmtHHMM24(d) {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).format(d);
+  return new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
 }
 
 function marketStatusText(inHours) {
@@ -134,12 +126,7 @@ function renderFromEmbedded(el, footerState) {
     if (el.wxHi) el.wxHi.textContent = `${hi}°`;
     if (el.wxLo) el.wxLo.textContent = `${lo}°`;
 
-    localStorage.setItem(
-      LS_WEATHER,
-      JSON.stringify({
-        current: { code, temp, hi, lo, text: wxText(code) }
-      })
-    );
+    localStorage.setItem(LS_WEATHER, JSON.stringify({ current: { code, temp, hi, lo, text: wxText(code) } }));
   }
 
   if (m?.symbols?.SPY?.price != null) {
@@ -148,6 +135,7 @@ function renderFromEmbedded(el, footerState) {
 
     const d = toDateObj(m.updated_iso);
     const status = marketStatusText(m.in_hours);
+
     footerState.market = d
       ? `Market ${fmtMMDD(d)} ${fmtHHMM24(d)}${status ? ` (${status})` : ""}`
       : (status ? `Market (${status})` : "Market");
@@ -164,9 +152,7 @@ function renderFromEmbedded(el, footerState) {
     localStorage.setItem(LS_TRAFFIC, JSON.stringify(t));
   }
 
-  if (el.footerLine) {
-    el.footerLine.textContent = buildFooterLine(footerState);
-  }
+  if (el.footerLine) el.footerLine.textContent = buildFooterLine(footerState);
 }
 
 function renderFromCache(el, footerState) {
@@ -189,6 +175,7 @@ function renderFromCache(el, footerState) {
 
       const d = toDateObj(m.updated_iso);
       const status = marketStatusText(m.in_hours);
+
       footerState.market = d
         ? `Market ${fmtMMDD(d)} ${fmtHHMM24(d)}${status ? ` (${status})` : ""}`
         : "";
@@ -251,9 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initTopClock({ clockEl: el.clock, dateLineEl: el.dateLine, themeBtn: el.themeBtn });
 
   const tp = timeParts();
-  if (el.greeting) {
-    el.greeting.textContent = `${greetingForHour24(tp.hour24)}, ${CFG.name}!`;
-  }
+  if (el.greeting) el.greeting.textContent = `${greetingForHour24(tp.hour24)}, ${CFG.name}!`;
 
   if (el.mktIcon) el.mktIcon.innerHTML = iconChart();
   if (el.wcIcon) el.wcIcon.innerHTML = iconClock();
@@ -277,13 +262,13 @@ document.addEventListener("DOMContentLoaded", () => {
   renderFromCache(el, footerState);
   renderFromEmbedded(el, footerState);
 
-  // Always render footer at least once
-  if (el.footerLine) {
-    el.footerLine.textContent = buildFooterLine(footerState);
-  }
+  if (el.footerLine) el.footerLine.textContent = buildFooterLine(footerState);
 
   const base = isEink ? "../" : "./";
   makeCardLink($("weatherCard"), `${base}weather/`);
   makeCardLink($("marketsCard"), `${base}market/`);
   makeCardLink($("worldClockCard"), `${base}world-clock/`);
+
+  // ✅ NEW: Traffic tile clickable
+  makeCardLink($("trafficCard"), `${base}traffic/`);
 });
