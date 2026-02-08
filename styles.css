@@ -464,7 +464,8 @@ html.invert{
    ========================================================= */
 .wcList{
   display:grid;
-  grid-template-columns:repeat(5, 1fr);
+  /* CHANGED: 5 -> 3 (you now show 3 clocks + 3 traffic routes) */
+  grid-template-columns:repeat(3, 1fr);
   gap:8px;
 }
 
@@ -489,6 +490,8 @@ html.invert{
   font-weight:900;
   font-variant-numeric:tabular-nums;
   text-align:center;
+  /* ADDED: stop wrapping like "10:05" then "PM" */
+  white-space:nowrap;
 }
 
 .wcGrid{
@@ -581,7 +584,8 @@ html.invert{
 
 @media (min-width: 601px) and (max-width: 900px){
   .week{ grid-template-columns:repeat(4,1fr); }
-  .wcList{ grid-template-columns:repeat(4, 1fr); }
+  /* CHANGED: 4 -> 3 so the 3 tiles don't get squeezed on tablets */
+  .wcList{ grid-template-columns:repeat(3, 1fr); }
 }
 
 /* =========================================================

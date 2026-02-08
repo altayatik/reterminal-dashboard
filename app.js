@@ -7,12 +7,13 @@ import {
   timeParts
 } from "./shared/core.js";
 
-import { iconChart, iconWeather, iconClock } from "./shared/icons.js";
+import { iconChart, iconWeather, iconClock, iconRoad } from "./shared/icons.js";
 import { wxText } from "./shared/weather-utils.js";
 import { HOME_CLOCKS, formatTime12h } from "./shared/world-clock-utils.js";
 
 const LS_WEATHER = "dash_weather_embedded_v1";
 const LS_MARKETS = "dash_markets_embedded_v1";
+const LS_TRAFFIC = "dash_traffic_embedded_v1";
 
 function greetingForHour24(h) {
   if (h >= 5 && h < 12) return "Good morning";
@@ -27,6 +28,44 @@ function fmtPrice(p) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })}`;
+}
+
+/* ---------- Footer formatting helpers (24h) ---------- */
+
+function toDateObj(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
+function fmtMMDD(d) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "2-digit",
+    day: "2-digit"
+  }).format(d);
+}
+
+function fmtHHMM24(d) {
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(d);
+}
+
+function marketStatusText(inHours) {
+  if (inHours === true) return "Open";
+  if (inHours === false) return "Closed";
+  return "";
+}
+
+function buildFooterLine(state) {
+  const parts = [];
+  if (state.market) parts.push(state.market);
+  if (state.traffic) parts.push(state.traffic);
+  if (state.loaded) parts.push(state.loaded);
+  return parts.join(" · ");
 }
 
 /* ---------------- World clock (main card) ---------------- */
@@ -51,11 +90,37 @@ function tickWorldClockStrip(container) {
   }
 }
 
+/* ---------------- Traffic (main card) ---------------- */
+
+function shortTrafficStatus(s) {
+  const v = String(s || "").toLowerCase();
+  if (v.startsWith("light")) return "LIGHT";
+  if (v.startsWith("medium")) return "MEDIUM";
+  if (v.startsWith("heavy")) return "HEAVY";
+  if (v.startsWith("severe")) return "SEVERE";
+  return (s || "--").toString().toUpperCase();
+}
+
+function renderTraffic(el, trafficObj) {
+  if (!el.trafficList) return;
+
+  const routes = Array.isArray(trafficObj?.routes) ? trafficObj.routes : null;
+  if (!routes || routes.length === 0) return;
+
+  el.trafficList.innerHTML = routes.slice(0, 3).map(r => `
+    <div class="wcTile">
+      <div class="wcCity">${r.label || r.id || "--"}</div>
+      <div class="wcTime">${shortTrafficStatus(r.status)}</div>
+    </div>
+  `).join("");
+}
+
 /* ---------------- Data from embedded scripts + cache ---------------- */
 
-function renderFromEmbedded(el) {
+function renderFromEmbedded(el, footerState) {
   const w = window.DASH_DATA?.weather;
   const m = window.DASH_DATA?.markets;
+  const t = window.DASH_DATA?.traffic;
 
   if (w?.current) {
     const code = w.current.weather_code;
@@ -81,31 +146,30 @@ function renderFromEmbedded(el) {
     if (el.spy) el.spy.textContent = fmtPrice(m.symbols.SPY.price);
     if (el.iau) el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
 
-    const updated =
-      m.updated_local ||
-      (m.updated_iso ? new Date(m.updated_iso).toLocaleString() : "—");
+    const d = toDateObj(m.updated_iso);
+    const status = marketStatusText(m.in_hours);
+    footerState.market = d
+      ? `Market ${fmtMMDD(d)} ${fmtHHMM24(d)}${status ? ` (${status})` : ""}`
+      : (status ? `Market (${status})` : "Market");
 
-    const status =
-      m.in_hours === true
-        ? " · Market open"
-        : m.in_hours === false
-          ? " · Market closed"
-          : "";
+    localStorage.setItem(LS_MARKETS, JSON.stringify({ ...m }));
+  }
 
-    const txt = `Updated ${updated}${status}`;
-    if (el.mktUpdated) el.mktUpdated.textContent = txt;
+  if (t?.routes?.length) {
+    renderTraffic(el, t);
 
-    localStorage.setItem(
-      LS_MARKETS,
-      JSON.stringify({
-        ...m,
-        updated_text: txt
-      })
-    );
+    const d = toDateObj(t.updated_iso);
+    footerState.traffic = d ? `Traffic ${fmtHHMM24(d)}` : "Traffic";
+
+    localStorage.setItem(LS_TRAFFIC, JSON.stringify(t));
+  }
+
+  if (el.footerLine) {
+    el.footerLine.textContent = buildFooterLine(footerState);
   }
 }
 
-function renderFromCache(el) {
+function renderFromCache(el, footerState) {
   try {
     const w = JSON.parse(localStorage.getItem(LS_WEATHER));
     if (w?.current) {
@@ -122,7 +186,21 @@ function renderFromCache(el) {
     if (m?.symbols) {
       if (el.spy) el.spy.textContent = fmtPrice(m.symbols.SPY?.price);
       if (el.iau) el.iau.textContent = fmtPrice(m.symbols.IAU?.price);
-      if (el.mktUpdated) el.mktUpdated.textContent = m.updated_text || "Cached";
+
+      const d = toDateObj(m.updated_iso);
+      const status = marketStatusText(m.in_hours);
+      footerState.market = d
+        ? `Market ${fmtMMDD(d)} ${fmtHHMM24(d)}${status ? ` (${status})` : ""}`
+        : "";
+    }
+  } catch {}
+
+  try {
+    const t = JSON.parse(localStorage.getItem(LS_TRAFFIC));
+    if (t?.routes?.length) {
+      renderTraffic(el, t);
+      const d = toDateObj(t.updated_iso);
+      footerState.traffic = d ? `Traffic ${fmtHHMM24(d)}` : "";
     }
   } catch {}
 }
@@ -141,13 +219,8 @@ function makeCardLink(node, href) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  // ✅ Detect /e-ink route via body class
   const isEink = document.body.classList.contains("eink");
-
-  // ✅ Only scale the stage on non-eink routes
-  if (!isEink) {
-    initStageScale();
-  }
+  if (!isEink) initStageScale();
 
   const el = {
     greeting: $("greeting"),
@@ -164,12 +237,14 @@ document.addEventListener("DOMContentLoaded", () => {
     mktIcon: $("mktIcon"),
     spy: $("spy"),
     iau: $("iau"),
-    mktUpdated: $("mktUpdated"),
 
     wcIcon: $("wcIcon"),
     wcStrip: $("wcList"),
 
-    updated: $("updated")
+    trafficIcon: $("trafficIcon"),
+    trafficList: $("trafficList"),
+
+    footerLine: $("footerLine")
   };
 
   initTheme(el.themeBtn);
@@ -182,28 +257,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (el.mktIcon) el.mktIcon.innerHTML = iconChart();
   if (el.wcIcon) el.wcIcon.innerHTML = iconClock();
+  if (el.trafficIcon) el.trafficIcon.innerHTML = iconRoad();
 
-  // World clock strip (horizontal tiles)
   renderWorldClockStrip(el.wcStrip);
   tickWorldClockStrip(el.wcStrip);
 
-  // Align ticks to the next minute boundary
   const msToNextMinute = (60 - new Date().getSeconds()) * 1000 + 50;
   setTimeout(() => {
     tickWorldClockStrip(el.wcStrip);
     setInterval(() => tickWorldClockStrip(el.wcStrip), 60 * 1000);
   }, msToNextMinute);
 
-  renderFromCache(el);
-  renderFromEmbedded(el);
+  const footerState = {
+    market: "",
+    traffic: "",
+    loaded: `Loaded ${tp.hour}:${tp.minute}`
+  };
 
-  if (el.updated) {
-    el.updated.textContent = `Loaded ${tp.hour}:${tp.minute}`;
+  renderFromCache(el, footerState);
+  renderFromEmbedded(el, footerState);
+
+  // Always render footer at least once
+  if (el.footerLine) {
+    el.footerLine.textContent = buildFooterLine(footerState);
   }
 
-  // ✅ Links must be different when running under /e-ink/
   const base = isEink ? "../" : "./";
-
   makeCardLink($("weatherCard"), `${base}weather/`);
   makeCardLink($("marketsCard"), `${base}market/`);
   makeCardLink($("worldClockCard"), `${base}world-clock/`);

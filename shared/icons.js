@@ -27,6 +27,16 @@ export function iconChart() {
   </svg>`;
 }
 
+export function iconRoad() {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">
+    <path ${base} d="M7 2L4 22"></path>
+    <path ${base} d="M17 2l3 20"></path>
+    <path ${base} d="M12 3v4"></path>
+    <path ${base} d="M12 10v4"></path>
+    <path ${base} d="M12 17v4"></path>
+  </svg>`;
+}
+
 export function iconWeather(code) {
   const kind =
     (code === 0 || code === 1) ? "sun" :

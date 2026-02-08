@@ -75,12 +75,10 @@
         <div class="label">IAU</div>
         <div class="value" id="iau">--</div>
       </div>
-
-      <div class="tiny muted" id="mktUpdated">--</div>
     </article>
 
-    <!-- world clock (replaces week) -->
-    <article class="card span2" id="worldClockCard" tabindex="0" role="link" aria-label="Open world clock">
+    <!-- world clock -->
+    <article class="card" id="worldClockCard" tabindex="0" role="link" aria-label="Open world clock">
       <div class="cardTitle">
         <span class="icon" id="wcIcon"></span>
         <span>World Clock</span>
@@ -89,17 +87,40 @@
       <div class="wcList" id="wcList"></div>
     </article>
 
+    <!-- traffic -->
+    <article class="card" id="trafficCard" tabindex="0" aria-label="Traffic status">
+      <div class="cardTitle">
+        <span class="icon" id="trafficIcon"></span>
+        <span>Traffic</span>
+      </div>
+
+      <div class="wcList" id="trafficList">
+        <div class="wcTile">
+          <div class="wcCity">I-90/94</div>
+          <div class="wcTime">--</div>
+        </div>
+        <div class="wcTile">
+          <div class="wcCity">I-290</div>
+          <div class="wcTime">--</div>
+        </div>
+        <div class="wcTile">
+          <div class="wcCity">I-55</div>
+          <div class="wcTime">--</div>
+        </div>
+      </div>
+    </article>
+
   </section>
 
   <footer class="footer">
-    <span class="tiny muted" id="updated">--</span>
+    <span class="tiny muted" id="footerLine">--</span>
   </footer>
 
 </main>
 
-<!-- keep your existing data scripts -->
 <script src="https://dashboard-data-api.vercel.app/api/weather"></script>
 <script src="https://dashboard-data-api.vercel.app/api/markets"></script>
+<script src="https://dashboard-data-api.vercel.app/api/traffic"></script>
 
 <script src="config.js"></script>
 <script type="module" src="app.js"></script>

@@ -1,10 +1,8 @@
 // shared/world-clock-utils.js
 
 export const HOME_CLOCKS = [
-  { label: "Honolulu", tz: "Pacific/Honolulu" },
   { label: "Los Angeles", tz: "America/Los_Angeles" },
   { label: "Denver", tz: "America/Denver" },
-  { label: "Chicago", tz: "America/Chicago" },
   { label: "New York", tz: "America/New_York" }
 ];
 
