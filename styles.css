@@ -494,6 +494,16 @@ html.invert{
   white-space:nowrap;
 }
 
+.wcMeta{
+  font-size:10px;
+  font-weight:900;
+  color:var(--muted);
+  text-transform:uppercase;
+  text-align:center;
+  line-height:1.1;
+  white-space:nowrap;
+}
+
 .wcGrid{
   display:grid;
   grid-template-columns:1fr 1fr;

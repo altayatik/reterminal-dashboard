@@ -115,6 +115,7 @@ function renderTraffic(el, trafficObj) {
     <div class="wcTile">
       <div class="wcCity">${r.label || r.id || "--"}</div>
       <div class="wcTime">${shortTrafficStatus(r.status)}</div>
+      ${r.reversible_lanes?.label ? `<div class="wcMeta">${r.reversible_lanes.label}</div>` : ""}
     </div>
   `).join("");
 }
