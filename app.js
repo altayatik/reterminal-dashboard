@@ -16,6 +16,10 @@ const LS_MARKETS = "dash_markets_embedded_v1";
 const LS_TRAFFIC = "dash_traffic_embedded_v1";
 const DATA_API_BASE = "https://dashboard-data-api.vercel.app";
 const DATA_SCRIPT_TIMEOUT_MS = 4500;
+const DATA_SCRIPT_TIMEOUTS_MS = {
+  traffic: 9000
+};
+const DATA_SCRIPT_VERSION = "20260517-traffic2";
 const STATIC_DATA_URLS = {
   markets: new URL("./data/markets.json", import.meta.url)
 };
@@ -209,12 +213,13 @@ function loadDataScript(kind) {
     window.DASH_DATA = window.DASH_DATA || {};
 
     const script = document.createElement("script");
+    const timeoutMs = DATA_SCRIPT_TIMEOUTS_MS[kind] || DATA_SCRIPT_TIMEOUT_MS;
     const timer = window.setTimeout(() => {
       script.remove();
       resolve(null);
-    }, DATA_SCRIPT_TIMEOUT_MS);
+    }, timeoutMs);
 
-    script.src = `${DATA_API_BASE}/api/${kind}`;
+    script.src = `${DATA_API_BASE}/api/${kind}?v=${DATA_SCRIPT_VERSION}`;
     script.async = true;
     script.onload = () => {
       window.clearTimeout(timer);
