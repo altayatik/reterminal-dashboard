@@ -20,10 +20,6 @@ const DATA_SCRIPT_TIMEOUTS_MS = {
   traffic: 9000
 };
 const DATA_SCRIPT_VERSION = "20260517-traffic2";
-const STATIC_DATA_URLS = {
-  markets: new URL("./data/markets.json", import.meta.url),
-  traffic: new URL("./data/traffic.json", import.meta.url)
-};
 
 function afterPageLoad(fn) {
   const run = () => window.setTimeout(fn, 0);
@@ -245,8 +241,16 @@ function refreshEmbeddedData(el, footerState) {
   }
 }
 
+function staticDataUrls() {
+  const prefix = document.body?.classList?.contains("eink") ? "../data/" : "./data/";
+  return {
+    markets: `${prefix}markets.json`,
+    traffic: `${prefix}traffic.json`
+  };
+}
+
 async function loadStaticFallbacks(el, footerState) {
-  await Promise.all(Object.entries(STATIC_DATA_URLS).map(async ([kind, url]) => {
+  await Promise.all(Object.entries(staticDataUrls()).map(async ([kind, url]) => {
     if (window.DASH_DATA?.[kind]) continue;
 
     try {
@@ -273,7 +277,7 @@ function makeCardLink(node, href) {
   });
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+function initDashboard() {
   const isEink = document.body.classList.contains("eink");
   if (!isEink) initStageScale();
 
@@ -341,4 +345,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ✅ NEW: Traffic tile clickable
   makeCardLink($("trafficCard"), `${base}traffic/`);
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDashboard, { once: true });
+} else {
+  initDashboard();
+}
