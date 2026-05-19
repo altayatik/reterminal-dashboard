@@ -2,7 +2,7 @@ import { initStageScale, initTheme, initTopClock, initBack, $, CFG, timeParts } 
 import { iconChart } from "../shared/icons.js";
 
 const API_BASE = "https://dashboard-data-api.vercel.app/api/markets";
-const LS_MARKET_DETAIL = "dash_markets_detail_v1";
+const LS_MARKET_DETAIL = "dash_markets_detail_v2";
 const LS_MARKET_HOME = "dash_markets_embedded_v1";
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const SCRIPT_TIMEOUT_MS = 30000;
@@ -127,6 +127,14 @@ function renderGrid(gridEl, data) {
   }
 }
 
+function hasUsableMarketData(raw) {
+  const norm = normalizeMarkets(raw);
+  return SYMBOLS.some((sym) => {
+    const s = norm.symbols[sym];
+    return (s?.price != null && s.price > 0) || (Array.isArray(s?.history) && s.history.length > 0);
+  });
+}
+
 function loadMarketsScript() {
   return new Promise((resolve, reject) => {
     window.DASH_DATA = window.DASH_DATA || {};
@@ -159,6 +167,7 @@ function getCached() {
     const c = JSON.parse(localStorage.getItem(LS_MARKET_DETAIL));
     if (!c?.savedAt) return null;
     if ((Date.now() - c.savedAt) > CACHE_TTL_MS) return null;
+    if (!hasUsableMarketData(c.payload)) return null;
     return c.payload || null;
   } catch {
     return null;
@@ -166,6 +175,7 @@ function getCached() {
 }
 
 function setCached(payload) {
+  if (!hasUsableMarketData(payload)) return;
   try {
     localStorage.setItem(LS_MARKET_DETAIL, JSON.stringify({ savedAt: Date.now(), payload }));
   } catch {}
@@ -212,11 +222,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderGrid(el.mktGrid, norm);
     el.mktUpdated.textContent = `Updated ${norm.updated || "cached"}`;
     el.mktStatus.textContent = norm.in_hours === false ? "Market closed (cached snapshot)" : "Cached snapshot";
-    return;
   }
 
   const fallback = getHomeCached();
-  if (fallback) {
+  if (!cached && fallback && hasUsableMarketData(fallback)) {
     const norm = normalizeMarkets(fallback);
     renderGrid(el.mktGrid, norm);
     el.mktUpdated.textContent = `Updated ${norm.updated || "offline snapshot"}`;
