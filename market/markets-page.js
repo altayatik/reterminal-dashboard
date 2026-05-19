@@ -5,7 +5,7 @@ const API_BASE = "https://dashboard-data-api.vercel.app/api/markets";
 const LS_MARKET_DETAIL = "dash_markets_detail_v1";
 const LS_MARKET_HOME = "dash_markets_embedded_v1";
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
-const SCRIPT_TIMEOUT_MS = 7000;
+const SCRIPT_TIMEOUT_MS = 30000;
 
 const SYMBOLS = ["SPY", "QQQ", "IAU", "SLV"];
 
@@ -180,16 +180,6 @@ function getHomeCached() {
   }
 }
 
-async function getStaticFallback() {
-  try {
-    const r = await fetch("../data/markets.json", { cache: "no-store" });
-    if (!r.ok) return null;
-    return await r.json();
-  } catch {
-    return null;
-  }
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
   initStageScale();
 
@@ -225,7 +215,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  const fallback = getHomeCached() || await getStaticFallback();
+  const fallback = getHomeCached();
   if (fallback) {
     const norm = normalizeMarkets(fallback);
     renderGrid(el.mktGrid, norm);
